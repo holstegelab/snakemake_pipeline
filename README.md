@@ -10,16 +10,16 @@ Pipeline for the analysis of Pacbio data
 6. Perform sample check by comparing pacbio genotypes with GWAS array genotypes
 
 # To run the pipeline, use the following commands:
-# It is adviseable to run the pipelin in a screen process
+## It is adviseable to run the pipelin in a screen process
 screen -S name_screen_process
 
-# Load conda environment py37 to use snakemake
+## Load conda environment py37 to use snakemake
 conda activate py37
 
-# Main command
+## Main command
 snakemake -s /project/holstegelab/Software/snakemake_pipeline/bin/Snakefile --latency-wait 60 --configfile /project/holstegelab/Software/snakemake_pipeline/bin/config/config_files_snakemake/config_XXX.yml --cluster "sbatch --ntasks {cluster.ntasks} -c {cluster.ncpupertask}" --cluster-config /project/holstegelab/Software/snakemake_pipeline/config/config_cluster.yml --jobs 1
 
-# Parameters
+## Parameters
 The only parameter to define is the configuration file (--configfile). This is a plain-text file containing the directory of input files and the desider directory of output files. An example config file should look like:
 
 IN_DIR : "path/to/input/directory"
