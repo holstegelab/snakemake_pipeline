@@ -10,7 +10,7 @@ Pipeline for the analysis of Pacbio data
 6. Perform sample check by comparing pacbio genotypes with GWAS array genotypes
 
 # To run the pipeline, use the following commands:
-## It is adviseable to run the pipelin in a screen process
+## It is adviseable to run the pipeline in a screen process
 screen -S name_screen_process
 
 ## Load conda environment py37 to use snakemake
