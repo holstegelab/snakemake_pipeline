@@ -9,11 +9,11 @@ ccs:
 
 align_ccs:
   ntasks: 1
-  ncpupertask: 20
+  ncpupertask: 30
 
 align_sub:
   ntasks: 1
-  ncpupertask: 20
+  ncpupertask: 30
 
 sample_check:
   ntasks: 1
@@ -25,8 +25,8 @@ primrose:
 
 align_ccs_chm13:
   ntasks: 1
-  ncpupertask: 20
+  ncpupertask: 30
 
 align_nonccs_chm13:
   ntasks: 1
-  ncpupertask: 20
+  ncpupertask: 30
