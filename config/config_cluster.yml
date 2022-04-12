@@ -1,0 +1,32 @@
+__default__:
+  ntasks: 1
+  ncpupertask: 1
+  mem: 5M
+
+ccs:
+  ntasks: 1
+  ncpupertask: 40
+
+align_ccs:
+  ntasks: 1
+  ncpupertask: 20
+
+align_sub:
+  ntasks: 1
+  ncpupertask: 20
+
+sample_check:
+  ntasks: 1
+  ncpupertask: 12
+
+primrose:
+  ntasks: 1
+  ncpupertask: 40
+
+align_ccs_chm13:
+  ntasks: 1
+  ncpupertask: 20
+
+align_nonccs_chm13:
+  ntasks: 1
+  ncpupertask: 20
