@@ -10,3 +10,37 @@ merge_hifi_hg38:
 index_hifi_hg38:
   ntasks: 1
   ncpupertask: 4
+
+merge_nonhifi_hg38:
+  ntasks: 1
+  ncpupertask: 10
+
+index_nonhifi_hg38:
+  ntasks: 1
+  ncpupertask: 4
+
+merge_hifi_chm13:
+  ntasks: 1
+  ncpupertask: 10
+
+index_hifi_chm13:
+  ntasks: 1
+  ncpupertask: 4
+
+merge_nonhifi_chm13:
+  ntasks: 1
+  ncpupertask: 10
+
+index_nonhifi_chm13:
+  ntasks: 1
+  ncpupertask: 4
+
+pileup_analysis_hg38:
+  ntasks: 1
+  ncpupertask: 40
+
+pileup_analysis_chm13:
+  ntasks: 1
+  ncpupertask: 40
+
+
