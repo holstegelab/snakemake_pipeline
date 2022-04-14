@@ -18,36 +18,35 @@ print("## Input files prefix --> %s" %(inp_bam_prefix))
 print("## Output files prefix --> %s" %(out_bam_prefix))
 print("## Analysis type --> %s" %(analysis_type))
 
-if analysis_type == 'merge':
-    # Rule all to check output files
-    rule all:
-        input:
-            # 1. merge hifi hg38
-            expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix)
-            
-            # 2. merge hifi chm13
-            #expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix),
+# Rule all to check output files
+rule all:
+    input:
+        # 1. merge hifi hg38
+        expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix)
+           
+        # 2. merge hifi chm13
+        #expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix),
 
-            # 3. merge non-hifi hg38
-            #expand("{out_prefix}.merged.nonhifi.hg38.bam.bai", out_prefix = out_bam_prefix),
+        # 3. merge non-hifi hg38
+        #expand("{out_prefix}.merged.nonhifi.hg38.bam.bai", out_prefix = out_bam_prefix),
 
-            # 4. merge non-hifi chm13
-            #expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix)
+        # 4. merge non-hifi chm13
+        #expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix)
     
-    rule merge_hifi_hg38:
-        input:
-            expand("{inp_prefix}", inp_prefix = ' '.join([x + '.ccs.primrose.hifi.hg38.bam' for x in inp_bam_prefix]))
-        output:
-            expand("{out_prefix}", out_prefix = out_bam_prefix + '.merged.hifi.hg38.bam')
-        shell: """
-            {SAMTOOLS} merge {output[0]} {input[0]} --threads 10
-            """
+rule merge_hifi_hg38:
+    input:
+        expand("{inp_prefix}", inp_prefix = ' '.join([x + '.ccs.primrose.hifi.hg38.bam' for x in inp_bam_prefix]))
+    output:
+        expand("{out_prefix}", out_prefix = out_bam_prefix + '.merged.hifi.hg38.bam')
+    shell: """
+        {SAMTOOLS} merge {output[0]} {input[0]} --threads 10
+        """
 
-    rule index_hifi_hg38:
-        input:
-            expand("{inp_prefix}", inp = out_bam_prefix + '.merged.hifi.hg38.bam')
-        output:
-            expand("{out_prefix}", out_prefix = out_bam_prefix + '.merged.hifi.hg38.bam.bai')
-        shell: """
-            {SAMTOOLS} index {input[0]} -@ 4
-            """
+rule index_hifi_hg38:
+    input:
+        expand("{inp_prefix}", inp = out_bam_prefix + '.merged.hifi.hg38.bam')
+    output:
+        expand("{out_prefix}", out_prefix = out_bam_prefix + '.merged.hifi.hg38.bam.bai')
+    shell: """
+        {SAMTOOLS} index {input[0]} -@ 4
+        """
