@@ -11,6 +11,7 @@ PILEUP='/project/holstegelab/Share/oscar/software/CpG-main/scripts/RefAlnBam-to-
 
 ### RESOURCES PATHS
 HG38FA='/project/holstegelab/Share/pacbio/resources/GRCh38_full_analysis_set_plus_decoy_hla.fa'
+CHM13FA='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0.fa.gz'
 MODELDIR="/project/holstegelab/Share/oscar/software/CpG-main/models/pileup_calling_model"
 
 CACHE=None
@@ -27,16 +28,15 @@ rule all:
     input:
         # 1. merge hifi
         expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix),
 
         # 2. merge non-hifi hg38
-        #expand("{out_prefix}.merged.nonhifi.hg38.bam.bai", out_prefix = out_bam_prefix),
-        #expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.merged.nonhifi.hg38.bam.bai", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix),
 
         # 3. pileup analysis
-        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38.bed')
-        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
-
+        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38.bed'),
+        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
 
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
@@ -137,5 +137,5 @@ rule pileup_analysis_chm13:
     output:
         expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
     shell: """
-        {PYTHON39} {PILEUP} -b {input[0]} -f {HG38FA} -o {output[0]} -t 40 -p model -d {MODELDIR}
+        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {output[0]} -t 40 -p model -d {MODELDIR}
         """
