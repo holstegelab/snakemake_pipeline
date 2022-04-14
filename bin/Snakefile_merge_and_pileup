@@ -12,11 +12,9 @@ CACHE=None
 ### MAIN -- run before the rules -- identify input files and do md5sum check of the files
 inp_bam_prefix = config["IN_FILES"].split(',')
 out_bam_prefix = config["OUT_FILE"]
-analysis_type = config["AN_TYPE"].lower()
 
 print("## Input files prefix --> %s" %(inp_bam_prefix))
 print("## Output files prefix --> %s" %(out_bam_prefix))
-print("## Analysis type --> %s" %(analysis_type))
 
 # Rule all to check output files
 rule all:
