@@ -42,7 +42,7 @@ else:
     # Obtain reads
     for line in in_bam:
         counter += 1
-        print('** %s reads processed' %(counter), end = '\r')
+        #print('** %s reads processed' %(counter), end = '\r')
         # extract tags
         info = line.tags
         # find tag position for np and rq

@@ -1,0 +1,12 @@
+__default__:
+  ntasks: 1
+  ncpupertask: 1
+  mem: 5M
+
+merge_hifi_hg38:
+  ntasks: 1
+  ncpupertask: 10
+
+index_hifi_hg38:
+  ntasks: 1
+  ncpupertask: 4
