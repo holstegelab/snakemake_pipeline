@@ -35,8 +35,10 @@ rule all:
         expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix),
 
         # 3. pileup analysis
-        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38.bed'),
-        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
+        expand("{out_prefix}", out_prefix = out_bam_prefix.split('/')[-1] + '.pileup.chm13'),
+        expand("{out_prefix}", out_prefix = out_bam_prefix.split('/')[-1] + '.pileup.hg38')
+        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38'),
+        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13')
 
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
@@ -84,7 +86,8 @@ rule pileup_analysis_hg38:
     input:
         expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38.bed')
+        expand("{out_prefix}", out_prefix = out_bam_prefix.split('/')[-1] + '.pileup.hg38')
+        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38')
     shell: """
         {PYTHON39} {PILEUP} -b {input[0]} -f {HG38FA} -o {output[0]} -t 40 -p model -d {MODELDIR}
         """
@@ -135,7 +138,8 @@ rule pileup_analysis_chm13:
     input:
         expand("{out_prefix}.merged.hifi.chm13.bam", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
+        expand("{out_prefix}", out_prefix = out_bam_prefix.split('/')[-1] + '.pileup.chm13')
+        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
     shell: """
         {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {output[0]} -t 40 -p model -d {MODELDIR}
         """
