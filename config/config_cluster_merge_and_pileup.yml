@@ -43,4 +43,10 @@ pileup_analysis_chm13:
   ntasks: 1
   ncpupertask: 40
 
+deepvariant_hg38:
+  ntasks: 1
+  ncpupertask: 60
 
+deepvariant_chm13:
+  ntasks: 1
+  ncpupertask: 60
