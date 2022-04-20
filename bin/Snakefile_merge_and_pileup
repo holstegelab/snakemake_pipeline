@@ -101,9 +101,9 @@ rule deepvariant_hg38:
     input:
         expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.gvcf.gz", out_prefix = out_bam_prefix)
-    shell """
+    shell: """
         {SH} {DEEPVARIANT} {input[0]} {output[0]} {output[1]} {HG38FA}
         """
 
@@ -164,8 +164,8 @@ rule deepvariant_chm13:
     input:
         expand("{out_prefix}.merged.hifi.chm13.bam", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix),
         expand("{out_prefix}.merged.hifi.deepvariant.chm13.gvcf.gz", out_prefix = out_bam_prefix)
-    shell """
+    shell: """
         {SH} {DEEPVARIANT} {input[0]} {output[0]} {output[1]} {CHM13FA}
         """
