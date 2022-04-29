@@ -5,7 +5,7 @@ __default__:
 
 merge_hifi_hg38:
   ntasks: 1
-  ncpupertask: 10
+  ncpupertask: 20
 
 index_hifi_hg38:
   ntasks: 1
@@ -13,7 +13,7 @@ index_hifi_hg38:
 
 merge_nonhifi_hg38:
   ntasks: 1
-  ncpupertask: 10
+  ncpupertask: 20
 
 index_nonhifi_hg38:
   ntasks: 1
@@ -21,7 +21,7 @@ index_nonhifi_hg38:
 
 merge_hifi_chm13:
   ntasks: 1
-  ncpupertask: 10
+  ncpupertask: 20
 
 index_hifi_chm13:
   ntasks: 1
@@ -29,7 +29,7 @@ index_hifi_chm13:
 
 merge_nonhifi_chm13:
   ntasks: 1
-  ncpupertask: 10
+  ncpupertask: 20
 
 index_nonhifi_chm13:
   ntasks: 1
@@ -37,11 +37,11 @@ index_nonhifi_chm13:
 
 pileup_analysis_hg38:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 50
 
 pileup_analysis_chm13:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 50
 
 deepvariant_hg38:
   ntasks: 1

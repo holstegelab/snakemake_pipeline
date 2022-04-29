@@ -6,8 +6,8 @@ import re
 
 ### SOFTWARE PATHS
 SAMTOOLS='/project/holstegelab/Software/nicco/tools/samtools-1.11/samtools'
-PYTHON39='/project/holstegelab/Software/conda/miniconda3_v1/envs/py39/bin/python'
-PILEUP='/project/holstegelab/Share/oscar/software/CpG-main/scripts/RefAlnBam-to-ModsBed-SAMTags.py'
+PYTHON39='/home/holstegelab-ntesi/.conda/envs/cpg/bin/python3.9'
+PILEUP='/project/holstegelab/Share/oscar/software/CpG-main/scripts/RefAlnBam-to-ModsBed-SAMTags-modified.py'
 SH='/usr/bin/sh'
 DEEPVARIANT='/project/holstegelab/Software/nicco/bin/deepvariant/run_deepvariant_generic_forPipeline.sh'
 
@@ -37,12 +37,13 @@ rule all:
         expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix),
 
         # 3. deepvariant
-        expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
         #expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix)
 
         # 4. pileup analysis
-        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38'),
-        #expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13')
+        expand("{out_prefix}.met.hg38.combined.denovo.bed", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix)
+
 
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
@@ -90,10 +91,11 @@ rule pileup_analysis_hg38:
     input:
         expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix)
     output:
-        #expand("{out_prefix}", out_prefix = out_bam_prefix.split('/')[-1] + '_pileup_hg38')
-        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.hg38')
+        expand("{out_prefix}.met.hg38.combined.denovo.bed", out_prefix = out_bam_prefix)
+    params:
+        pfx = expand("{out_prefix}.met.hg38", out_prefix = out_bam_prefix)
     shell: """
-        {PYTHON39} {PILEUP} -b {input[0]} -f {HG38FA} -o {output[0]} -t 40 -p model -d {MODELDIR}
+        {PYTHON39} {PILEUP} -b {input[0]} -f {HG38FA} -o {params.pfx} -t 50 -p model -d {MODELDIR}
         """
 
 # Rule to run deepvariant for hg38
@@ -152,12 +154,13 @@ rule index_nonhifi_chm13:
 # Rule to perform pileup analysis for chm13
 rule pileup_analysis_chm13:
     input:
-        expand("{out_prefix}.merged.hifi.chm13.bam", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.chm13.bam", out_prefix = out_bam_prefix),
     output:
-        #expand("{out_prefix}", out_prefix = out_bam_prefix.split('/')[-1] + '_pileup_chm13')
-        expand("{out_prefix}", out_prefix = out_bam_prefix + '.pileup.chm13.bed')
+        expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix)
+    params:
+        pfx = expand("{out_prefix}.met.chm13", out_prefix = out_bam_prefix)
     shell: """
-        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {output[0]} -t 40 -p model -d {MODELDIR}
+        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {params.pfx} -t 50 -p model -d {MODELDIR} --skip-bw-conversion
         """
 
 # Rule to run deepvariant for hg38

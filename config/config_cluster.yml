@@ -5,15 +5,15 @@ __default__:
 
 ccs:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 50
 
 align_ccs:
   ntasks: 1
-  ncpupertask: 30
+  ncpupertask: 50
 
 align_sub:
   ntasks: 1
-  ncpupertask: 30
+  ncpupertask: 50
 
 sample_check:
   ntasks: 1
@@ -21,12 +21,12 @@ sample_check:
 
 primrose:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 50
 
 align_ccs_chm13:
   ntasks: 1
-  ncpupertask: 30
+  ncpupertask: 50
 
 align_nonccs_chm13:
   ntasks: 1
-  ncpupertask: 30
+  ncpupertask: 50

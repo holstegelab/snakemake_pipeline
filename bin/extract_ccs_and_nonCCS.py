@@ -46,8 +46,8 @@ else:
         # extract tags
         info = line.tags
         # find tag position for np and rq
-        np_pos = False
-        rq_pos = False
+        np_pos = 'not_found'
+        rq_pos = 'not_found'
         for i in range(len(info)):
             if info[i][0] == 'np':
                 np_pos = i
@@ -55,13 +55,14 @@ else:
                 rq_pos = i
 
         # check if read is a ccs of non-ccs
-        if (np_pos != False) and (rq_pos != False):
+        if (np_pos != 'not_found') and (rq_pos != 'not_found'):
             if (info[np_pos][1] >= 3) and (info[rq_pos][1] >= 0.99):
                 out_bam.write(line)
             else:
                 out_bam_noCCS.write(line)
         else:
             print('!!! NP and RQ not found in read --> %s !!!' %(line.query_name))
+            break
 
     in_bam.close()
     out_bam.close()
