@@ -89,20 +89,21 @@ rule index_nonhifi_hg38:
 # Rule to perform pileup analysis for hg38
 rule pileup_analysis_hg38:
     input:
-        expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.met.hg38.combined.denovo.bed", out_prefix = out_bam_prefix)
     params:
         pfx = expand("{out_prefix}.met.hg38", out_prefix = out_bam_prefix)
     shell: """
-        {PYTHON39} {PILEUP} -b {input[0]} -f {HG38FA} -o {params.pfx} -t 50 -p model -d {MODELDIR}
+        {PYTHON39} {PILEUP} -b {input[0]} -f {HG38FA} -o {params.pfx} -t 50 -p model -d {MODELDIR} --skip_bw_conversion
         """
 
 # Rule to run deepvariant for hg38
 rule deepvariant_hg38:
     input:
         expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.gvcf.gz", out_prefix = out_bam_prefix)
@@ -155,12 +156,13 @@ rule index_nonhifi_chm13:
 rule pileup_analysis_chm13:
     input:
         expand("{out_prefix}.merged.hifi.chm13.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix)        
     output:
         expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix)
     params:
         pfx = expand("{out_prefix}.met.chm13", out_prefix = out_bam_prefix)
     shell: """
-        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {params.pfx} -t 50 -p model -d {MODELDIR} --skip-bw-conversion
+        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {params.pfx} -t 50 -p model -d {MODELDIR} --skip_bw_conversion
         """
 
 # Rule to run deepvariant for hg38

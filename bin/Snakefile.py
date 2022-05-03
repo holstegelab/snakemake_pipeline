@@ -124,7 +124,7 @@ if RUN == True:
         output:
             temp(expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = output_name))
         shell: """
-            {PRIMROSE} --min-passes 0 {input[0]} {output[0]}
+            {PRIMROSE} --min-passes 0 {input[0]} {output[0]} 
             """
 
     # Rule for extracting CCS and non-CCS reads
