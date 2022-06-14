@@ -1,0 +1,55 @@
+### PACKAGES
+import os
+import csv
+import sys
+import re
+from os import path
+
+### SOFTWARE PATHS
+PYTHON="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/python"
+PRIMROSE="/project/holstegelab/Software/conda/miniconda3_v1/envs/py39/bin/primrose"
+CCS="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/ccs"
+MD5="/usr/bin/md5sum"
+EXTRACT_CCS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_and_nonCCS.py"
+ALIGN="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/pbmm2"
+SAMPLE_CHECK="/project/holstegelab/Software/snakemake_pipeline/bin/sample_check.py"
+
+### RESOURCE PATHS
+H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
+HG38SUBREADS='/project/holstegelab/Share/pacbio/resources/h38_subread.mmi'
+CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_hifi.mmi'
+CHM13SUBREADS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_subreads.mmi'
+DCACHE_CONFIG='/project/holstegelab/Data/dcache.conf'
+
+CACHE=None
+
+### FUNCTIONS
+
+### MAIN -- run before the rules
+print("## Input subreads in dcache --> %s" %(config["IN_DIR"]))
+print("## Output directory --> %s" %(config["OUT_DIR"]))
+# create folder to place files copied from dcache
+folder_name, smrt_id, out_name = config["IN_DIR"].split('/')[-3::]
+if not path.isdir('%s/%s' %(config["OUT_NAME"], folder_name)):
+    os.system('mkdir %s/%s' %(config["OUT_NAME"], folder_name))
+# also check if a folder with the smrt_id name is present
+if not path.isdir('%s/%s/%s' %(config["OUT_NAME"], folder_name, smrt_id)):
+    os.system('mkdir %s/%s/%s' %(config["OUT_NAME"], folder_name, smrt_id))
+# then adjust the output name and the path to be used as input for the dcache copy
+out_name = out_name.split('.')[0]
+dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
+# thus far the folders where to place the files to be copied from dcache are created
+
+rule all:
+    input:
+        # 1. copy from dcache
+        expand('{out_dir}/{smrt_id}/{out_name}.subreads.bam')
+
+rule dcache_copy:
+    input:
+        expand("%s/" %(dcache_path))
+    output:
+        expand("{folder_name}/{smrt_id}/{out_name}.subreads.bam", folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
+    shell: """
+        rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} dcache:{input[0]} {output[0]}
+        """
