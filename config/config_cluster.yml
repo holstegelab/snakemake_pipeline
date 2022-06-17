@@ -34,3 +34,7 @@ align_nonccs_chm13:
 dcache_copy:
   ntasks: 1
   ncpupertask: 1
+
+md5_check:
+  ntasks: 1
+  ncpupertask: 1
