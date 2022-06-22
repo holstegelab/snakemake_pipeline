@@ -92,6 +92,7 @@ if not path.isdir('%s/%s/%s' %(config["OUT_DIR"], folder_name, smrt_id)):
 out_name = out_name.split('.')[0]
 dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
 
+# Rule to manage output files and order of snakemake processes
 rule all:
     input:
         # 1. copy from dcache
@@ -99,8 +100,23 @@ rule all:
         # 2. md5 check sum
         expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
         # 3. do ccs analysis keeping all kinetics values
-        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 4. run primrose analysis -- commented out 
+        #expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 5. extract hifi and non-hifi reads
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 6. alignment to hg38 of hifi reads
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 7. alignment to hg38 of non-hifi reads
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 8. alignment to chm13 of hifi reads
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 9. alignment to chm13 of non-hifi reads
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 10. sample check
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name)
 
+# Rule to copy data from dcache
 rule dcache_copy:
     output:
         expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
@@ -111,6 +127,7 @@ rule dcache_copy:
         rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} dcache:{params.inp}/ {params.pfx}/
         """
 
+# Rule to perform md5 sum check if this is available
 rule md5_check:
     output:
         expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id)
@@ -119,6 +136,7 @@ rule md5_check:
     run:
         RUN = checkSum("%s/%s/%s" %(config["OUT_DIR"], folder_name, smrt_id), MD5)
 
+# Rule to run CCS analysis on the cluster
 rule ccs:
     input:
         expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
@@ -132,3 +150,74 @@ rule ccs:
         RUN = open('%s/%s/%s/snakemake_checksum.txt' %(config["OUT_DIR"], folder_name, smrt_id)).readlines()[0].rstrip()
         if RUN == 'True':
             shell("{CCS} --min-passes 0 --min-rq 0 {input[1]} {output[0]} --report-file {output[1]} --log-file {output[2]} --log-level INFO --all-kinetics")
+
+# Rule for methylation analysis with primrose
+rule primrose:
+    input:
+        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        temp(expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name))
+    shell: """
+        {PRIMROSE} --min-passes 0 {input[0]} {output[0]} 
+        """
+
+# Rule for extracting CCS and non-CCS reads
+rule extract_ccs_nonccs:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    shell: """
+        {PYTHON} {EXTRACT_CCS} {input[0]} {output[0]} {output[1]}
+        """
+
+# Rule for alignment of hifi reads to GRCh38
+rule align_ccs:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+    shell: """
+        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        """
+
+# Rule for alignment of non-hifi reads to GRCh38
+rule align_nonccs:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+    shell: """
+        {ALIGN} align --preset SUBREAD {HG38SUBREADS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        """
+
+# Rule for alignment of hifi reads to chm13
+rule align_ccs_chm13:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+    shell: """
+        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        """
+
+# Rule for alignment of non-hifi reads to chm13
+rule align_nonccs_chm13:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+    shell: """
+        {ALIGN} align --preset SUBREAD {CHM13SUBREADS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        """
+
+# Rule to do the sample check
+rule sample_check:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name)
+    shell: """
+        {PYTHON} {SAMPLE_CHECK} {input[0]} {output[0]}
+        """
