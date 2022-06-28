@@ -38,3 +38,7 @@ dcache_copy:
 md5_check:
   ntasks: 1
   ncpupertask: 1
+
+coverage_summary:
+  ntasks: 1
+  ncpupertask: 3

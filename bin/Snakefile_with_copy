@@ -13,6 +13,7 @@ MD5="/usr/bin/md5sum"
 EXTRACT_CCS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_and_nonCCS.py"
 ALIGN="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/pbmm2"
 SAMPLE_CHECK="/project/holstegelab/Software/snakemake_pipeline/bin/sample_check.py"
+MOSDEPTH="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/mosdepth"
 
 ### RESOURCE PATHS
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
@@ -114,7 +115,9 @@ rule all:
         # 9. alignment to chm13 of non-hifi reads
         expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 10. sample check
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name),
+        # 11. coverage summary
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = out_name)
 
 # Rule to copy data from dcache
 rule dcache_copy:
@@ -129,6 +132,8 @@ rule dcache_copy:
 
 # Rule to perform md5 sum check if this is available
 rule md5_check:
+    input:
+        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
     output:
         expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id)
     params:
@@ -220,4 +225,19 @@ rule sample_check:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name)
     shell: """
         {PYTHON} {SAMPLE_CHECK} {input[0]} {output[0]}
+        """
+
+# Rule to calculate coverage summary
+rule coverage_summary:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = out_name)
+    params:
+        pfx = expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage", out_dir = config["OUT_DIR"], out_name = out_name),
+        pfx_name = expand("{out_name}", out_name = out_name),
+        pfx_main = expand("/project/holstegelab/Share/pacbio/data_processed/coverage_samples.txt")
+    shell: """
+        {MOSDEPTH} -n --fast-mode --by 500 {params.pfx} {input[0]} --threads 3;
+        grep -w total {output[0]} | sed 's/total/{params.pfx_name}/g' | cut -f1-4 >> {params.pfx_main}
         """
