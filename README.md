@@ -60,3 +60,11 @@ Similarly to the previous pipeline, also this takes a configuration file as inpu
 `OUT_FILE : "path/to/sample_merged/sample_merged"`
 
 In the command above, 4 samples will be combined together. The directory and prefix of the combined data is defined with `OUT_FILE`.
+
+# Additional scripts
+## submit_single_jobs.R
+Script in R that run a single operation on a set of .bam files. At the moment, the only operation is the coverage calculation. This was necessary for the files for which input raw data is deleted after the pipeline. Now the coverage operation is implemented as part of the pipeline.
+
+## generate_freeze_coverage.R
+Script in R that takes the summary statistics of the coverage of each sample, merge them together and then add information such as the project (blood-brain-child, ad-centenarians, anke), sequencing center (vumc, nijmegen) as well as sample information (sample id, phenotype, data path).
+This script should be run every week to generate a new freeze. The results should then be put in the file on the researchdrive at `pacbio/YYYYMMDD_pacbio_sequencing_Nicco.xlsx`.
