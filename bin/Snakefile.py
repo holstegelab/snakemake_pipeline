@@ -13,6 +13,7 @@ EXTRACT_CCS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_an
 ALIGN="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/pbmm2"
 SAMPLE_CHECK="/project/holstegelab/Software/snakemake_pipeline/bin/sample_check.py"
 MOSDEPTH="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/mosdepth"
+ASBT="/project/holstegelab/Software/nicco/tools/asbt/build/asbt"
 
 ### RESOURCE PATHS
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
@@ -107,7 +108,8 @@ if RUN == True:
             expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = output_name),
 
             # 7. coverage analysis
-            expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = output_name)
+            #expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = output_name)
+            expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage_summary.txt", out_dir = config["OUT_DIR"], out_name = output_name)
 
     # Rule for CCS analysis
     rule ccs:
@@ -197,12 +199,12 @@ if RUN == True:
         input:
             expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = output_name)
         output:
-            expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = output_name)
+            expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage_summary.txt", out_dir = config["OUT_DIR"], out_name = output_name)
         params:
-            pfx = expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage", out_dir = config["OUT_DIR"], out_name = output_name),
             pfx_name = expand("{out_name}", out_name = output_name),
-            pfx_main = expand("/project/holstegelab/Share/pacbio/data_processed/coverage_samples.txt")
+            pfx_main = expand("/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt")
         shell: """
-            {MOSDEPTH} -n --fast-mode --by 500 {params.pfx} {input[0]} --threads 3;
-            grep -w total {output[0]} | sed 's/total/{params.pfx_name}/g' | cut -f1-4 >> {params.pfx_main}
+            printf "GLOBAL_MEDIAN_READ_LENGTH\tGLOBAL_COVERAGE\tMAPPED_COVERAGE\tMAPPED_READS\tALT_COVERAGE\tALT_READS\tUNMAPPED_COVERAGE\tUNMAPPED_READS\n{params.pfx_name}\t" > {output[0]}
+            {ASBT} cov -g 3088000000 {input[0]} >> {output[0]}
+            tail -1 {output[0]} >> {params.pfx_main}
             """

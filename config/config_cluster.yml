@@ -41,4 +41,4 @@ md5_check:
 
 coverage_summary:
   ntasks: 1
-  ncpupertask: 3
+  ncpupertask: 1
