@@ -8,9 +8,11 @@
 
 # Main
 # 1. read input coverage stats
+    cat('## Reading coverage statistics..\n')
     coverage_stats = fread('/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt', h=T, stringsAsFactors=F, sep='\t')
 
 # 2. read all files from the different projects
+    cat('## Matching sample types and sequencing centers..\n')
     bbc_project = system("find /project/holstegelab/Share/pacbio/data_processed/blood_brain_child -name 'm*ccs*log'", intern = T)
     ad_chc_project = system("find /project/holstegelab/Share/pacbio/data_processed/ad_centenarians -name 'm*ccs*log'", intern = T)
     nijmegen = system("find /project/holstegelab/Share/pacbio/data_processed/nijmegen -name 'm*ccs*log'", intern = T)
@@ -63,5 +65,6 @@
     # and add these information to the main dataframe
     all_runs_info = cbind(all_runs_info, add_info)
 # 6. save information
-    outname = paste0('/project/holstegelab/Share/pacbio/data_processed/', Sys.Date(), '_freeze_sequencing_stats.txt')
+    cat('## Writing new freeze data..\n')
+    outname = paste0('/project/holstegelab/Share/pacbio/data_processed/coverage_freezes/', Sys.Date(), '_freeze_sequencing_stats.txt')
     write.table(all_runs_info, outname, quote=F, row.names=F, sep = "\t", dec = ',')

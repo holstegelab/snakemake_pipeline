@@ -9,12 +9,6 @@ library(data.table)
 library(rslurm)
 library(stringr)
 
-# Input data
-# input data is aligned bam file to hg38 (ad-chc project, sequenced in Amsterdam)
-aligned_bam = system(paste0('find /project/holstegelab/Share/pacbio/data_processed/nijmegen/ -name "*ccs*.hifi*hg38*bam"'), intern = T)
-# output coverage file where to add lines
-outfile = '/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt'
-
 # Functions
 # function to run the coverage profiling
 coverage_profile = function(bam_file, prefix, sample_name){
@@ -30,11 +24,16 @@ coverage_profile = function(bam_file, prefix, sample_name){
     # add results to main coverage file
     cmd = paste0("tail -1 ", prefix, " >> /project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt")
     system(cmd)
-    return(res)
+    return(cmd)
 }
 
 # Main
 # 1. coverage stats -- main loop to find files that need to be processed
+    # Input data is aligned bam file to hg38 (ad-chc project, sequenced in Amsterdam)
+    aligned_bam = system(paste0('find /project/holstegelab/Share/pacbio/data_processed/nijmegen/ -name "*ccs*.hifi*hg38*bam"'), intern = T)
+    # output coverage file where to add lines
+    outfile = '/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt'
+    # create dataframe for submission
     df = data.frame(bam_file = as.character(), prefix = as.character(), sample_name = as.character())
     for (bam in aligned_bam){
         out_file = str_replace_all(bam, '.bam', '.coverage_summary.txt')
@@ -47,3 +46,4 @@ coverage_profile = function(bam_file, prefix, sample_name){
     }
     # calculate coverage summary
     sjob <- slurm_apply(coverage_profile, df, jobname = 'test_coverage', nodes = 6, cpus_per_node = 8, submit = TRUE)
+
