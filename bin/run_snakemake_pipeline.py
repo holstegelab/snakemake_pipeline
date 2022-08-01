@@ -49,12 +49,14 @@ for run in to_be_done:
 df = pd.DataFrame(to_be_done, columns = ['movie_id', 'data_path', 'size_gb', 'date'])
 
 # 5. which run should we not run? [80-100Gb] gives about 1x coverage of hifi. I would exclude everything smaller than 80Gb
-df_filtered = df[df['size_gb'] >= 100]
+df_filtered = df[df['size_gb'] >= 80]
 
 # 6. then split old runs (before 2022, blood-brain-child project, that were not done from the other AD-chc project)
 to_be_done_datapath = list(df_filtered['data_path'])
 newer_to_do = list(filter(lambda x: re.search(r'2022', x), to_be_done_datapath))
 df_filtered_newer = df_filtered[df_filtered['data_path'].isin(newer_to_do)]
+# also order by date
+df_filtered_newer = df_filtered_newer.sort_values(by=['date'])
 
 # 7. convert dataframe to list of lists
 smrt_to_run = df_filtered_newer.values.tolist()
@@ -69,7 +71,16 @@ for smrt in smrt_to_run:
     #
     # !!!!! BE CAREFUL WITH RUNNING THIS FOR LOOP!! BETTER TO DO IT 1 BY 1 TO NOT MESS THINGS UP
     #
-    # RUN STARTED FOR r64050_20220422_120813 AND r64050e_20220527_133058 [0, 1, 2, 3, 4 of smrt_to_run]
+    # RUN STARTED FOR r64050_20220422_120813 AND r64050e_20220527_133058 [0, 1, 2, 3, 4 of smrt_to_run
+    # RUN STARTED FOR r64050e_20220603_134449 (all 4 smrt cells)
+    # RUN STARTED FOR r64367e_20220603_134547 (all 4 smrt cells)
+    # RUN STARTED FOR r64050e_20220624_101248 (all 4 smrt cells)
+    # RUN STARTED FOR r64037e_20220623_103005 (all 4 smrt cells) -- Nijmegen -- ccs version 6.4
+    # RUN STARTED FOR r64367e_20220624_101256 (all 4 smrt cells)
+    # RUN STARTED FOR r64050e_20220704_072158 (1 smrt cell available)
+    # RUN STARTED FOR r64367e_20220707_114315 (all 4 smrt cells)
+    # RUN STARTED FOR r64367e_20220715_121520 (all 4 smrt cells)
+    # RUN STARTED FOR r64367e_20220722_091625 (all 4 smrt cells)
     #
     print('XXX submitting sample with config file --> %s' %(smrt[-1]))
     # create an interactive screen session for the merging script

@@ -36,14 +36,13 @@ rule all:
         expand("{out_prefix}.merged.nonhifi.hg38.bam.bai", out_prefix = out_bam_prefix),
         expand("{out_prefix}.merged.nonhifi.chm13.bam.bai", out_prefix = out_bam_prefix),
 
-        # 3. deepvariant
+        # 3. pileup analysis
+        expand("{out_prefix}.met.hg38.combined.denovo.bed", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix),
+
+        # 4. deepvariant
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
         #expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix)
-
-        # 4. pileup analysis
-        expand("{out_prefix}.met.hg38.combined.denovo.bed", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix)
-
 
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
@@ -103,7 +102,9 @@ rule pileup_analysis_hg38:
 rule deepvariant_hg38:
     input:
         expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.merged.hifi.hg38.bam.bai", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.met.hg38.combined.denovo.bed", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.gvcf.gz", out_prefix = out_bam_prefix)

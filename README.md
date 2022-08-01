@@ -2,6 +2,7 @@
 Pipeline for the analysis of Pacbio data. The pipeline is subdivided into two main sub-pipelines. The first comprises the analysis of raw data from the sequencer. The second analysis comprises the merging of analyzed data (aligned hifi and non-hifi data) belonging to the same sample.
 
 # Main Pipeline (Snakefile)
+The latest development of the pipeline file is able to automatically (1) retrieve the data that need to be processed, (2) write the necessary configuration files, and (3) submit the pipeline.
 ## Steps in the pipeline
 1. Copy of sequencing data from dcache to local storage
 2. MD5 checksum check
@@ -14,25 +15,26 @@ Pipeline for the analysis of Pacbio data. The pipeline is subdivided into two ma
 7. Coverage summary per chromosome and total
 
 ## To run the pipeline, use the following commands:
-### It is adviseable to run the pipeline in a screen process
-`screen -S name_screen_process`
-
-### Load conda environment py37 to use snakemake
-`conda activate py37`
+### It is adviseable to run the script interactively, to avoid the submission of jobs using data that is still actively being copied to dcache. 
+The script to use is `run_snakemake_pipeline.py`. This script will open a new screen window with a defined name, and will run the pipeline within that screen window. Alternatively (yet not recommended), if you are sure that all data in dcache has been copied correctly, you can also do:
+`python3 run_snakemake_pipeline.py`
+As a consequence, all files present in dcache that have not been analyzed yet, will be analyzed.
 
 ### Main command
-`snakemake -s path/to/Snakefile_with_copy.py --latency-wait 60 --configfile path/to/config_XXX.yml --cluster "sbatch --ntasks {cluster.ntasks} -c {cluster.ncpupertask}" --cluster-config path/to/config_cluster.yml --jobs 1`
+Behind the scenes, the command that is actually use to run the pipeline is contained in `submit_copy_and_pipeline.sh`. This bash script takes a single argument as parameter, that is, the configuration file containing the information of the sample to be processed. This bash script calls the actual `snakemake` command that guides the pipeline.
 
 ### Parameters
-The only parameter to define is the configuration file (`--configfile`). This is a plain-text file containing the directory of input files and the desider directory of output files. An example config file should look like:
-
+The only parameter to define to the bash script is the configuration file containing information of the sample (smrt cell) to be analyzed. Briefly, a configuration file contains the path to the data to be copied from dcache, and the output directory of the analyzed data. An example config file should look like:
 `IN_DIR : "tape/path/to/subreads/mXXXXX_XXXXXX_XXXXX.subreads.bam"`
 
 `OUT_DIR : "path/to/desider/output/directory"`
-
 The `IN_DIR` parameter links to dcache storage. The path to dcache storage is `~/dcache`.
 
+### Updates
+Due to the recent update to SMRTlink v11, the previous CCS algorithm version 6.0 did not work anymore. As a consequence, an updated version of the CCS algorithm (version 6.4) was needed, and it is now installed in conda environment smrtlink11. Because only the machines in Nijmegen have (for now) been updated to SMRTlink v11, at the moment both the previous pipeline (based on CCS v6) and the new pipeline (based on CCS v6.4) are present. The updated scripts are `submit_copy_and_pipeline_updated.sh` and `Snakefile_with_copy_update.py`.
+
 # Second Pipeline (Snakefile_merge_and_pileup)
+Similar to the first pipeline, the latest development of this pipeline is also able to automatically (1) retrieve the data that need to be processed, (2) write the necessary configuration files, and (3) submit the pipeline.
 ## Steps in the pipeline
 1. Merge and index hifi data aligned to GRCh38
 2. Merge and index non-hifi data aligned to GRCh38
@@ -43,42 +45,25 @@ The `IN_DIR` parameter links to dcache storage. The path to dcache storage is `~
 7. Run deepvariant analysis on GRCh38-aligned data
 
 ## To run the pipeline, use the following commands:
-### It is adviseable to run the pipeline in a screen process
-`screen -S name_screen_process`
-
-### Load conda environment py37 to use snakemake
-`conda activate cpg`
+### Althought it is adviseable to run the script interactively, the script can be run directly. 
+The script to use is `run_snakemake_merge.py`. This script will open a new screen window with a defined name, and will run the pipeline within that screen window. `python3 run_snakemake_merge.py`
+At the moment, this script will merge only samples for which the combined coverage is >15x.
 
 ### Main command
-`snakemake -s path/to/Snakefile_merge_and_pileup --latency-wait 60 --configfile path/to/config_merge/config_XXX.yml --cluster "sbatch --ntasks {cluster.ntasks} -c {cluster.ncpupertask}" --cluster-config path/to/config_cluster_merge_and_pileup.yml --jobs 1`
+Behind the scenes, the command that is actually use to run the pipeline is contained in `submit_merge_and_pileup.sh`. This bash script takes a single argument as parameter, that is, the configuration file containing the information of the sample to be processed. This bash script calls the actual `snakemake` command that guides the pipeline.
 
 ### Parameters
-Similarly to the previous pipeline, also this takes a configuration file as input. This should be a plain-text file containing the directory and file prefix of input and output files. An example config file could look like this:
-
+The only parameter to define to the bash script is the configuration file containing information of the sample (smrt cell) to be analyzed. Briefly, a configuration file contains the path to the datasets to be combined together, and the output directory of the analyzed data. An example config file should look like:
 `IN_FILES : "path/to/sample_1/m64037e_210709_135828,path/to/sample_2/m64050_201127_132810,path/to/sample_3/m64050_210223_091925,path/to/sample_4/m64050_210709_135541"`
-
 `OUT_FILE : "path/to/sample_merged/sample_merged"`
-
 In the command above, 4 samples will be combined together. The directory and prefix of the combined data is defined with `OUT_FILE`.
 
 # Additional scripts
 ## submit_single_jobs.R
 Script in R that run a single operation on a set of .bam files. At the moment, the only operation is the coverage calculation. This was necessary for the files for which input raw data is deleted after the pipeline. Now the coverage operation is implemented as part of the pipeline.
+A second part of this script is still used to copy raw CCS output to dcache as this files are the largest (in terms of storage).
 
 ## generate_freeze_coverage.R
 Script in R that takes the summary statistics of the coverage of each sample, merge them together and then add information such as the project (blood-brain-child, ad-centenarians, anke), sequencing center (vumc, nijmegen) as well as sample information (sample id, phenotype, data path).
 This script should be run every week to generate a new freeze. The results should then be put in the file on the researchdrive at `pacbio/YYYYMMDD_pacbio_sequencing_Nicco.xlsx`.
 
-## submit_merge_and_pileup.sh
-Bash script that is called by another script (`run_snakemake_merge.py`) in order to submit the snakemake pipeline to merge single smrt-cells results together, do the pileup analysis and deepvariant.
-
-## run_snakemake_merge.py
-This script can be used to merge data processed of single smrt cells together. At the moment, only samples with a combined coverage >15 are merged. At this moment (19 July 2022), 70 samples satisfy these parameters and are being merged. This script performs:
-1. collection of all single smrt cells results
-2. collection of their likely samples
-3. calculation of total coverage after combining smrt cells from the same sample
-4. if the combined total coverage is larger than 15, a configuration file readable by snakemake is created
-5. Finally, the `Snakefile_merge_and_pileup.py` pipeline is used to merge results. The submission automatically opens a screen process named `merge_{SAMPLE_NAME}`, loads the required conda environment `conda activate cpg` and finally runs the `submit_merge_and_pileup.py` script. This latter takes only 1 argument, that is, the configuration file needed by snakemake.
-`run_snakemake_merge.py` generates (when run for the first time) and then updates 2 files:
-1. a file containing the config_files that have been submitted through the pipeline (at `/project/holstegelab/Software/snakemake_pipeline/config/config_merge/merged_submitted.txt`)
-2. a summary file containing the date of submission, sample identifier and diagnosis, number of smrt cells involved, directory of outputs, and combined coverage (at `/project/holstegelab/Software/snakemake_pipeline/config/config_merge/freeze_merged_submitted.txt`). This latter file will then be copied to the main Excel file. Idea is to run all merging operations on Friday, update the freeze and finally update the Excel file.

@@ -34,7 +34,7 @@
     # NIJMEGEN
     nijmegen_tmp = data.frame(str_split_fixed(nijmegen, '/', 8), stringsAsFactors = F)
     nijmegen_tmp$X1 = NULL; nijmegen_tmp$NAME = str_replace_all(nijmegen_tmp$X8, '.ccs.log', '')
-    nijmegen_tmp$source = 'VUMC'; nijmegen_tmp$source[grep('e_', nijmegen_tmp$NAME)] = 'NIJMEGEN'; nijmegen_tmp$source[grep('m64367e', nijmegen_tmp$NAME)] = "VUMC"
+    nijmegen_tmp$source = 'VUMC'; nijmegen_tmp$source[grep('e_', nijmegen_tmp$NAME)] = 'NIJMEGEN'; nijmegen_tmp$source[grep('m64367e', nijmegen_tmp$NAME)] = "VUMC"; nijmegen_tmp$source[grep('m64050e', nijmegen_tmp$NAME)] = "VUMC"
     nijmegen_tmp$date = str_split_fixed(nijmegen_tmp$NAME, '_', 3)[, 2]
     nijmegen_df = data.frame(data_path = nijmegen, project = rep('ad_centenarians', nrow(nijmegen_tmp)), movie_id = nijmegen_tmp$NAME, sample_id = rep(NA, nrow(nijmegen_tmp)), source = nijmegen_tmp$source, date = nijmegen_tmp$date)
     # ANKE
