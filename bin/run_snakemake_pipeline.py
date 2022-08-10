@@ -81,6 +81,7 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20220707_114315 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220715_121520 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220722_091625 (all 4 smrt cells)
+    # RUN STARTED FOR r64367e_20220729_121556 (all 4 smrt cells)
     #
     print('XXX submitting sample with config file --> %s' %(smrt[-1]))
     # create an interactive screen session for the merging script

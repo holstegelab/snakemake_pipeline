@@ -133,5 +133,5 @@ copy_ccs_dcache = function(ccs_path, smrt_id){
     all_samples_info$date = NULL
 
     # submit job to slurm
-    tmp_df = all_samples_info[1:30, ]
-    sjob <- slurm_apply(copy_ccs_dcache, tmp_df, jobname = 'copy_ccs_dcache', nodes = 30, cpus_per_node = 1, submit = TRUE)
+    tmp_df = all_samples_info
+    sjob <- slurm_apply(copy_ccs_dcache, tmp_df, jobname = 'copy_ccs_dcache', nodes = 3, cpus_per_node = 1, submit = TRUE)
