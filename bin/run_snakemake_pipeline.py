@@ -45,6 +45,7 @@ for run in to_be_done:
     size = os.path.getsize(run[-1])/1e9
     date = run[0].split('_')[1]
     run.append(size); run.append(date)
+
 # put data into dataframe
 df = pd.DataFrame(to_be_done, columns = ['movie_id', 'data_path', 'size_gb', 'date'])
 
@@ -70,20 +71,36 @@ for smrt in smrt_to_run:
 #for smrt in smrt_to_run:
     #
     # !!!!! BE CAREFUL WITH RUNNING THIS FOR LOOP!! BETTER TO DO IT 1 BY 1 TO NOT MESS THINGS UP
+    # !!!!! THE PROBLEM IS THAT IF SOME DATA IS BEIGN COPIED TO DCACHE, IT SHOULD NOT BE PROCESSED
     #
     # RUN STARTED FOR r64050_20220422_120813 AND r64050e_20220527_133058 [0, 1, 2, 3, 4 of smrt_to_run
     # RUN STARTED FOR r64050e_20220603_134449 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220603_134547 (all 4 smrt cells)
     # RUN STARTED FOR r64050e_20220624_101248 (all 4 smrt cells)
-    # RUN STARTED FOR r64037e_20220623_103005 (all 4 smrt cells) -- Nijmegen -- ccs version 6.4
     # RUN STARTED FOR r64367e_20220624_101256 (all 4 smrt cells)
     # RUN STARTED FOR r64050e_20220704_072158 (1 smrt cell available)
     # RUN STARTED FOR r64367e_20220707_114315 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220715_121520 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220722_091625 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220729_121556 (all 4 smrt cells)
+    # RUN STARTED FOR r64367e_20220805_090626 (all 2 smrt cells)
+    # RUN STARTED FOR r64037e_20220623_103005 (all 4 smrt cells) -- Nijmegen -- trying monkey patch
+    # RUN STARTED FOR r64102e_20220627_135041 (all 4 smrt cells) -- Nijmegen -- monkey patch 
+    # RUN STARTED FOR r64167e_20220706_115319 (all 4 smrt cells) -- Nijmegen
+    # RUN STARTED FOR r64102e_20220714_112024 (all 4 smrt cells) -- Nijmegen
+    # RUN STARTED FOR r64367e_20220812_115756 (all 4 smrt cells)
+    # RUN STARTED FOR r64050e_20220812_115528 (all 4 smrt cells)
+    # RUN STARTED FOR r64167e_20220721_095203 (3 smrt cells -- 1 failed) -- Nijmegen
+    # RUN STARTED FOR r64050e_20220819_141927 (3 smrt cells -- 1 very low output) -- Nijmegen
+    # RUN STARTED FOR r64367e_20220819_142207 (all 4 smrt cells)
+    # RUN STARTED FOR r64037e_20220804_105221 (all 4 smrt cells) -- Nijmegen
+    # RUN STARTED FOR r64367e_20220825_143439 (3 smrt cells -- 1 failed)
+    # RUN STARTED FOR r64050e_20220902_124118 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20220909_114615 (2 smrt cells for now - 2 running)
+    # RUN STARTED FOR r64167e_20220808_135837 (4 smrt cells)  
+    # 
     #
-    print('XXX submitting sample with config file --> %s' %(smrt[-1]))
+    print('XXX submitting sample with config file --> %s' %(smrt[0]))
     # create an interactive screen session for the merging script
     screen_name = smrt[-1].split('/')[-1].replace('.yml', '').replace('config_', '')
     os.system("screen -dmS '%s' /bin/bash -i" %(screen_name))

@@ -24,8 +24,8 @@ def read_coverage(file_path):
 def read_sample(file_path):
     fpath = file_path.replace('.ccs.primrose.hifi.hg38.coverage_summary.txt', '.ccs.primrose.hifi.sample.txt')
     sample_match = pd.read_csv(fpath, sep = '\t')
-    # check if first is >0.95
-    likely_match = sample_match.loc[sample_match['PERC_HOMOLOGY'] > 0.95]
+    # check if first is >0.94
+    likely_match = sample_match.loc[sample_match['PERC_HOMOLOGY'] > 0.94]
     # if there's only 1 match with percentage of homology > 0.95, save the sample name and type
     # there are some exceptions for this: centenarian 100088 was duplicated but ok, anke's sample was not matched
     if likely_match.shape[0] == 1:
@@ -72,12 +72,16 @@ for f in all_files:
     # read coverage
     smrt_id, coverage = read_coverage(f)
     # read sample match
-    id_gwas, diagnosis = read_sample(f)
+    try:
+        id_gwas, diagnosis = read_sample(f)
+    except:
+        id_gwas, diagnosis = "NA", "NA"
     # save to dictionary
-    if id_gwas in samples_files.keys():
-        samples_files[id_gwas].append([f, smrt_id, coverage, diagnosis])
-    else:
-        samples_files[id_gwas] = [[f, smrt_id, coverage, diagnosis]]
+    if id_gwas != "NA":
+        if id_gwas in samples_files.keys():
+            samples_files[id_gwas].append([f, smrt_id, coverage, diagnosis])
+        else:
+            samples_files[id_gwas] = [[f, smrt_id, coverage, diagnosis]]
 
 # 4. loop across samples and add the total coverage and number of smrt cells
 for sample in samples_files.keys():

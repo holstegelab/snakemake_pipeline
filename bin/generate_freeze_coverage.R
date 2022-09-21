@@ -23,12 +23,14 @@
     bbc_project_tmp = data.frame(str_split_fixed(bbc_project, '/', 9), stringsAsFactors = F)
     bbc_project_tmp$X1 = NULL; bbc_project_tmp$NAME = str_replace_all(bbc_project_tmp$X9, '.ccs.log', '')
     bbc_project_tmp$source = 'VUMC'; bbc_project_tmp$source[grep('e_', bbc_project_tmp$NAME)] = 'NIJMEGEN'; bbc_project_tmp$source[grep('m64367e', bbc_project_tmp$NAME)] = "VUMC"
+    bbc_project_tmp$source[grep('m64050e', bbc_project_tmp$NAME)] = "VUMC"
     bbc_project_tmp$date = str_split_fixed(bbc_project_tmp$NAME, '_', 3)[, 2]
     bbc_df = data.frame(data_path = bbc_project, project = bbc_project_tmp$X7, movie_id = bbc_project_tmp$NAME, sample_id = bbc_project_tmp$X8, source = bbc_project_tmp$source, date = bbc_project_tmp$date)
     # AD-CHC
     ad_chc_project_tmp = data.frame(str_split_fixed(ad_chc_project, '/', 8), stringsAsFactors = F)
     ad_chc_project_tmp$X1 = NULL; ad_chc_project_tmp$NAME = str_replace_all(ad_chc_project_tmp$X8, '.ccs.log', '')
     ad_chc_project_tmp$source = 'VUMC'; ad_chc_project_tmp$source[grep('e_', ad_chc_project_tmp$NAME)] = 'NIJMEGEN'; ad_chc_project_tmp$source[grep('m64367e', ad_chc_project_tmp$NAME)] = "VUMC"
+    ad_chc_project_tmp$source[grep('m64050e', ad_chc_project_tmp$NAME)] = "VUMC"
     ad_chc_project_tmp$date = str_split_fixed(ad_chc_project_tmp$NAME, '_', 3)[, 2]
     ad_chc_df = data.frame(data_path = ad_chc_project, project = ad_chc_project_tmp$X7, movie_id = ad_chc_project_tmp$NAME, sample_id = rep(NA, nrow(ad_chc_project_tmp)), source = ad_chc_project_tmp$source, date = ad_chc_project_tmp$date)
     # NIJMEGEN
@@ -41,6 +43,7 @@
     anke_tmp = data.frame(str_split_fixed(anke, '/', 8), stringsAsFactors = F)
     anke_tmp$X1 = NULL; anke_tmp$NAME = str_replace_all(anke_tmp$X8, '.ccs.log', '')
     anke_tmp$source = 'VUMC'; anke_tmp$source[grep('e_', anke_tmp$NAME)] = 'NIJMEGEN'; anke_tmp$source[grep('m64367e', anke_tmp$NAME)] = "VUMC"
+    anke_tmp$source[grep('m64050e', anke_tmp$NAME)] = "VUMC"
     anke_tmp$date = str_split_fixed(anke_tmp$NAME, '_', 3)[, 2]
     anke_df = data.frame(data_path = anke, project = rep('anke_brain_bank', nrow(anke_tmp)), movie_id = anke_tmp$NAME, sample_id = rep(NA, nrow(anke_tmp)), source = anke_tmp$source, date = anke_tmp$date)
 
