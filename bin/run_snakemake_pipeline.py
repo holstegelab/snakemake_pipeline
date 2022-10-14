@@ -96,12 +96,14 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64037e_20220804_105221 (all 4 smrt cells) -- Nijmegen
     # RUN STARTED FOR r64367e_20220825_143439 (3 smrt cells -- 1 failed)
     # RUN STARTED FOR r64050e_20220902_124118 (4 smrt cells)
-    # RUN STARTED FOR r64050e_20220909_114615 (2 smrt cells for now - 2 running)
+    # RUN STARTED FOR r64050e_20220909_114615 (4 smrt cells)
     # RUN STARTED FOR r64167e_20220808_135837 (4 smrt cells, 1 still running)  
     # RUN STARTED FOR r64167e_20220715_20220715 (4 smrt cells)
-    # RUN STARTED FOR r64050e_20220916_094122 (2 smrt cells)
+    # RUN STARTED FOR r64050e_20220916_094122 (4 smrt cells)
     # RUN STARTED FOR r64367e_20220926_134945 (4 smrt cells)
     # RUN STARTED FOR r64367e_20221004_153104 (1 smrt cell)
+    # RUN STARTED FOR r64037e_20220812_121211 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20220912_104546 (4 smrt cells)
     # 
     #
     print('XXX submitting sample with config file --> %s' %(smrt[0]))

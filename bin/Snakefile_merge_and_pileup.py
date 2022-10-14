@@ -44,6 +44,9 @@ rule all:
         expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
         #expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix)
 
+        # 5. fasta files
+        expand("{out_prefix}.merged.hifi.fasta", out_prefix = out_bam_prefix),
+
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
 rule merge_hifi_hg38:
@@ -176,4 +179,14 @@ rule deepvariant_chm13:
         expand("{out_prefix}.merged.hifi.deepvariant.chm13.gvcf.gz", out_prefix = out_bam_prefix)
     shell: """
         {SH} {DEEPVARIANT} {input[0]} {output[0]} {output[1]} {CHM13FA}
+        """
+
+# Rule to convert BAM file to FASTA file
+rule bam2fasta:
+    input:
+        expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix)
+    output:
+        expand("{out_prefix}.merged.hifi.fasta", out_prefix = out_bam_prefix)
+    shell: """
+        {SAMTOOLS} fasta -@ 10 {input[0]} > {output[0]}
         """

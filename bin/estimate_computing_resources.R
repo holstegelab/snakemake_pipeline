@@ -486,7 +486,7 @@
     # cputime
     single_sample_cputime_mean = sum(na.omit(groups_mean_cputime$mean[which(groups_mean_cputime$variable %in% c('dcache copy', 'ccs', 'primrose', 'extract ccs', 'ccs alignment hg38', 'ccs alignment chm13', 'nonccs alignment hg38', 'nonccs alignment chm13', 'sample check', 'coverage summary'))]))
     single_sample_cputime_median = sum(na.omit(groups_median_cputime$median[which(groups_median_cputime$variable %in% c('dcache copy', 'ccs', 'primrose', 'extract ccs', 'ccs alignment hg38', 'ccs alignment chm13', 'nonccs alignment hg38', 'nonccs alignment chm13', 'sample check', 'coverage summary'))]))
-# 20. For a full sample we can assume 2 smrt cells + merging and so on
+# 20. FOR A FULL SAMPLE WE CAN ASSUME 2 SMRT CELLS + MERGING OPEARATION
     # runtime
     smrt_cell_sample_mean_runtime = 2*single_sample_runtime_mean
     smrt_cell_sample_median_runtime = 2*single_sample_runtime_median
@@ -516,7 +516,7 @@
         print(p)
     dev.off()
 
-# 21. Evaluate storage
+# 21. EVALUATE STORAGE -- ACTIVE STORAGE
     # list all processed files
     all_proces_bbc = system('find /project/holstegelab/Share/pacbio/data_processed/ad_centenarians/ -name "m*"', intern = T)
     all_proces_adchc = system('find /project/holstegelab/Share/pacbio/data_processed/blood_brain_child/ -name "m*"', intern = T)
@@ -554,14 +554,92 @@
     }
     mean(storage$total)
     median(storage$total)
-# 22. save workspace
+
+# 22. EVALUATE STORAGE -- DCACHE
+    # list of folders in dcache -- amsterdam
+    flist_amsterdam = system('ls -d ~/dcache/tape/pacbio/r*', intern = T)
+    flist_nijmegen = system('ls -d ~/dcache/tape/upload_nijmegen/r*', intern = T)
+    flist = c(flist_amsterdam, flist_nijmegen)
+    # prepare outputs
+    out_run = data.frame()
+    out_smrt = data.frame()
+    for (f in flist){
+        # get run id
+        run_id = unlist(strsplit(f, '/'))[[length(unlist(strsplit(f, '/')))]]
+        cat(paste0('** processing ', run_id, '                  \r'))
+        # storage of the whole run
+        storage_whole = system(paste0('du -shx ', f, ' | cut -f1,1'), intern = T)
+        storage_whole = stringr::str_replace_all(storage_whole, 'T', '')
+        storage_whole = stringr::str_replace_all(storage_whole, 'G', '/1000')
+        storage_whole = stringr::str_replace_all(storage_whole, 'M', '/1000000')
+        storage_whole = stringr::str_replace_all(storage_whole, 'K', '/1000000000')
+        storage_whole = eval(parse(text=storage_whole))
+        out_run = rbind(out_run, data.frame(id = run_id, size = storage_whole))
+        # then do the single smrt cells
+        smrt_list = system(paste0('ls ', f), intern = T)
+        for (smrt in smrt_list){
+            smrt_size = system(paste0('du -shx ', f, '/', smrt, ' | cut -f1,1'), intern = T)
+            smrt_size = stringr::str_replace_all(smrt_size, 'T', '')
+            smrt_size = stringr::str_replace_all(smrt_size, 'G', '/1000')
+            smrt_size = stringr::str_replace_all(smrt_size, 'M', '/1000000')
+            smrt_size = stringr::str_replace_all(smrt_size, 'K', '/1000000000')
+            smrt_size = eval(parse(text=smrt_size))
+            out_smrt = rbind(out_smrt, data.frame(id = run_id, smrt_id = smrt, size = smrt_size))
+        }
+    }
+    # summary per run
+    mean(out_run$size)
+    median(out_run$size)
+    # summary per smrt cell
+    out_smrt = out_smrt[which(out_smrt$id != 'r64037e_20220126_132718_A01_RETRY'),]
+    out_smrt = out_smrt[which(out_smrt$smrt_id != 'tmp-file-9dc54ff0-f203-49ea-9f59-f6a1db572631.txt'),]
+    failed_smrt = grep('FAILED', out_smrt$smrt_id); out_smrt = out_smrt[-failed_smrt,]
+    mean(out_smrt$size)
+    median(out_smrt$size)
+
+# 23. OUTPUT TABLES
+    # combined data of pipeline
+    colnames(combined_data) = c('ID', 'RUNTIME (H)', 'OPERATION', 'CPUTIME (H)', 'MEMORY (GB)')
+    write.table(combined_data, '20221010_combined_data_resources.txt', quote=F, row.names=F, sep="\t", dec=",")
+    # active storage
+    colnames(storage) = c('ID', 'TOTAL (GB)')    
+    write.table(storage, '20221010_active_storage.txt', quote=F, row.names=F, sep="\t", dec=",")
+    # dcache storage - single smrt cells
+    out_run$smrt_id = 'all_smrt_cells'
+    dcache_storage = rbind(out_run, out_smrt)
+    dcache_storage = dcache_storage[order(dcache_storage$id),]
+    colnames(dcache_storage) = c('ID', 'SIZE (TB)', 'SMRT CELLs')
+    write.table(dcache_storage, '20221010_dcache_storage.txt', quote=F, row.names=F, sep="\t", dec=",")
+
+# 24. SAVE WORKSPACE
     save.image('20221007_workspace_estimation.RData')
 
-
-
-
-
-
-
-
+# 26. COME OUT WITH MEAN VALUES FOR CCS, ALIGNMENTS, DEEPVARIANT, ASSEMBLY, OTHER (MULTIPLE TIME * 1)
+    # ccs algorithm
+        tmp_ccs = combined_data[which(combined_data$OPERATION == 'ccs'),]
+        mean(tmp_ccs$"CPUTIME (H)")
+    # alignments
+        tmp_aln = combined_data[grep('alignment', combined_data$OPERATION),]
+        mean(tmp_aln$"CPUTIME (H)")
+    # deepvariant
+        tmp_deep = combined_data[which(combined_data$OPERATION == 'deepvariant'),]
+        mean(tmp_deep$"CPUTIME (H)")
+    # assembly
+        # about 250 CPUhours per assembly should be a reasonable estimate
+    # other
+        tmp_other = combined_data[which(!(combined_data$OPERATION %in% c('ccs', 'deepvariant', as.character(unique(tmp_aln$OPERATION))))),]
+        mean(tmp_other$"RUNTIME (H)")           # this is assuming 1 CPU for each step
+        # adjust the latter for multiple CPUs in some steps
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'dcache copy')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'dcache copy')]
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'primrose')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'primrose')] * 50
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'extract ccs')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'extract ccs')]
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'sample check')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'sample check')] * 12
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'coverage summary')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'coverage summary')]
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'merge ccs hg38')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'merge ccs hg38')] * 20
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'merge ccs chm13')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'merge ccs chm13')] * 20
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'merge nonccs hg38')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'merge nonccs hg38')] * 20
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'merge nonccs chm13')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'merge nonccs chm13')] * 20
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'pileup hg38')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'pileup hg38')] * 50
+        tmp_other$"CPUTIME (H)"[which(tmp_other$OPERATION == 'pileup chm13')] = tmp_other$"RUNTIME (H)"[which(tmp_other$OPERATION == 'pileup chm13')] * 50
+        mean(tmp_other$"CPUTIME (H)")           # this is assuming 1 CPU for each step
 

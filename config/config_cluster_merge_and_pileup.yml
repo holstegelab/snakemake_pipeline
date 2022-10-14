@@ -50,3 +50,15 @@ deepvariant_hg38:
 deepvariant_chm13:
   ntasks: 1
   ncpupertask: 60
+
+bam2fasta:
+  ntasks: 1
+  ncpupertask: 10
+
+hifiasm_phased:
+  ntasks: 1
+  ncpupertask: 40
+
+hifiasm_primary:
+  ntasks: 1
+  ncpupertask: 40
