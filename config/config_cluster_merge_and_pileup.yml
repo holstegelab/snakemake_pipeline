@@ -62,3 +62,19 @@ hifiasm_phased:
 hifiasm_primary:
   ntasks: 1
   ncpupertask: 40
+
+gfa2fasta:
+  ntasks: 1
+  ncpupertask: 1
+
+align_hifiasm_hg38:
+  ntasks: 1
+  ncpupertask: 40
+
+align_hifiasm_chm13:
+  ntasks: 1
+  ncpupertask: 40
+
+busco_analysis:
+  ntasks: 1
+  ncpupertask: 20

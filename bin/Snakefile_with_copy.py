@@ -7,6 +7,7 @@ from os import path
 
 ### SOFTWARE PATHS
 PYTHON="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/python"
+PYTHON_SAMPLE_CHECK='~/.conda/envs/sampleCheck/bin/python'
 PRIMROSE="/project/holstegelab/Software/conda/miniconda3_v1/envs/py39/bin/primrose"
 CCS="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/ccs"
 MD5="/usr/bin/md5sum"
@@ -226,7 +227,7 @@ rule sample_check:
     output:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name)
     shell: """
-        {PYTHON} {SAMPLE_CHECK} {input[0]} {output[0]}
+        {PYTHON_SAMPLE_CHECK} {SAMPLE_CHECK} {input[0]} {output[0]}
         """
 
 # Rule to calculate coverage summary
