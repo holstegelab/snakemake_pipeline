@@ -7,7 +7,6 @@ from os import path
 
 ### SOFTWARE PATHS
 PYTHON="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/python"
-PYTHON_SAMPLE_CHECK='~/.conda/envs/sampleCheck/bin/python'
 PRIMROSE="/project/holstegelab/Software/conda/miniconda3_v1/envs/py39/bin/primrose"
 CCS="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/ccs"
 MD5="/usr/bin/md5sum"
@@ -99,23 +98,23 @@ dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
 rule all:
     input:
         # 1. copy from dcache
-        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
+        #expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
         # 2. md5 check sum
-        expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
+        #expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
         # 3. do ccs analysis keeping all kinetics values
-        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 4. run primrose analysis -- commented out 
         #expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 5. extract hifi and non-hifi reads
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 6. alignment to hg38 of hifi reads
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 7. alignment to hg38 of non-hifi reads
-        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 8. alignment to chm13 of hifi reads
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 9. alignment to chm13 of non-hifi reads
-        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 10. sample check
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name),
         # 11. coverage summary
@@ -227,7 +226,7 @@ rule sample_check:
     output:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name)
     shell: """
-        {PYTHON_SAMPLE_CHECK} {SAMPLE_CHECK} {input[0]} {output[0]}
+        {PYTHON} {SAMPLE_CHECK} {input[0]} {output[0]}
         """
 
 # Rule to calculate coverage summary

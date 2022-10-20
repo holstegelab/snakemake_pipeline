@@ -97,14 +97,18 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20220825_143439 (3 smrt cells -- 1 failed)
     # RUN STARTED FOR r64050e_20220902_124118 (4 smrt cells)
     # RUN STARTED FOR r64050e_20220909_114615 (4 smrt cells)
-    # RUN STARTED FOR r64167e_20220808_135837 (4 smrt cells, 1 still running)  
+    # RUN STARTED FOR r64167e_20220808_135837 (4 smrt cells)  
     # RUN STARTED FOR r64167e_20220715_20220715 (4 smrt cells)
     # RUN STARTED FOR r64050e_20220916_094122 (4 smrt cells)
     # RUN STARTED FOR r64367e_20220926_134945 (4 smrt cells)
-    # RUN STARTED FOR r64367e_20221004_153104 (1 smrt cell)
+    # RUN STARTED FOR r64367e_20221004_153104 (4 smrt cell)
     # RUN STARTED FOR r64037e_20220812_121211 (4 smrt cells)
     # RUN STARTED FOR r64367e_20220912_104546 (4 smrt cells)
-    # 
+    # RUN STARTED FOR r64367e_20220920_083142 (2 smrt cells, 2 very low output)
+    # RUN STARTED FOR r64050e_20220923_090617 (2 smrt cells, 2 very low output)
+    # RUN STARTED FOR r64050e_20220930_085949 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20221007_124347 (3 smrt cells, 1 uploading)
+    # RUN STARTED FOR r64367e_20221010_142232 (2 smrt cells, 2 not there)
     #
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     # create an interactive screen session for the merging script

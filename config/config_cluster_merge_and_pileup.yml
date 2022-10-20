@@ -78,3 +78,27 @@ align_hifiasm_chm13:
 busco_analysis:
   ntasks: 1
   ncpupertask: 20
+
+flye_assembly:
+  ntasks: 1
+  ncpupertask: 40
+
+align_flye:
+  ntasks: 1
+  ncpupertask: 40
+
+busco_flye:
+  ntasks: 1
+  ncpupertask: 20
+
+sv_discover_pbsv_reads:
+  ntasks: 1
+  ncpupertask: 2
+
+sv_call_pbsv_reads:
+  ntasks: 1
+  ncpupertask: 10
+
+sv_call_sniffles_reads:
+  ntasks: 1
+  ncpupertask: 10
