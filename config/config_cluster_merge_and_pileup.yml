@@ -67,11 +67,19 @@ gfa2fasta:
   ntasks: 1
   ncpupertask: 1
 
-align_hifiasm_hg38:
+align_hifiasm_hg38_haps:
   ntasks: 1
   ncpupertask: 40
 
-align_hifiasm_chm13:
+align_hifiasm_hg38_primary_alternate:
+  ntasks: 1
+  ncpupertask: 40
+
+align_hifiasm_chm13_haps:
+  ntasks: 1
+  ncpupertask: 40
+
+align_hifiasm_chm13_primary_alternate:
   ntasks: 1
   ncpupertask: 40
 
@@ -83,7 +91,11 @@ flye_assembly:
   ntasks: 1
   ncpupertask: 40
 
-align_flye:
+align_flye_hg38:
+  ntasks: 1
+  ncpupertask: 40
+
+align_flye_chm13:
   ntasks: 1
   ncpupertask: 40
 

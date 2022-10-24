@@ -20,7 +20,8 @@ SNIFFLES='~/.conda/envs/cpg/bin/sniffles'
 
 ### RESOURCES PATHS
 HG38FA='/project/holstegelab/Share/pacbio/resources/GRCh38_full_analysis_set_plus_decoy_hla.fa'
-CHM13FA='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0.fa.gz'
+CHM13FAGZ='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0.fa.gz'
+CHM13FA='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0.fa'
 MODELDIR="/project/holstegelab/Share/oscar/software/CpG-main/models/pileup_calling_model"
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
 CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_hifi.mmi'
@@ -79,8 +80,8 @@ rule all:
 
         # 7. SV calling
         # pbsv
-        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.svcall.gz'),
-        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.svcall.gz'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.svcall.vcf'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.svcall.vcf'),
         # sniffles
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.sniffles.vcf'),
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.sniffles.snf'),
@@ -206,7 +207,7 @@ rule pileup_analysis_chm13:
     params:
         pfx = expand("{out_prefix}.met.chm13", out_prefix = out_bam_prefix)
     shell: """
-        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FA} -o {params.pfx} -t 50 -p model -d {MODELDIR} --skip_bw_conversion
+        {PYTHON39} {PILEUP} -b {input[0]} -f {CHM13FAGZ} -o {params.pfx} -t 50 -p model -d {MODELDIR} --skip_bw_conversion
         """
 
 # Rule to run deepvariant for hg38
@@ -218,7 +219,7 @@ rule deepvariant_chm13:
         expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix),
         expand("{out_prefix}.merged.hifi.deepvariant.chm13.gvcf.gz", out_prefix = out_bam_prefix)
     shell: """
-        {SH} {DEEPVARIANT} {input[0]} {output[0]} {output[1]} {CHM13FA}
+        {SH} {DEEPVARIANT} {input[0]} {output[0]} {output[1]} {CHM13FAGZ}
         """
 
 # Rule to convert BAM file to FASTA file
@@ -269,16 +270,24 @@ rule flye_assembly:
         {FLYE} -g 3.1g --threads 40 --out-dir {params.pfx} --pacbio-hifi {input[0]}
         """
 
-# Rule to align flye assembly
-rule align_flye:
+# Rule to align flye assembly -- hg38
+rule align_flye_hg38:
     input:
         expand("{out_prefix}.hifi.flye/assembly.fasta", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.flye/assembly_hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.flye/assembly_chm13.bam", out_prefix = out_bam_prefix)
+        expand("{out_prefix}.hifi.flye/assembly_hg38.bam", out_prefix = out_bam_prefix)
     shell: """
         {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[1]} --log-level=INFO
+        """
+
+# Rule to align flye assembly -- chm13
+rule align_flye_chm13:
+    input:
+        expand("{out_prefix}.hifi.flye/assembly.fasta", out_prefix = out_bam_prefix)
+    output:
+        expand("{out_prefix}.hifi.flye/assembly_chm13.bam", out_prefix = out_bam_prefix)
+    shell: """
+        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         """
 
 # Rule to do BUSCO analysis on flye assembly
@@ -313,42 +322,56 @@ rule gfa2fasta:
         {GFATOOLS} gfa2fa {input[3]} > {output[3]}
         """
 
-# Alignment to GRCh38
-rule align_hifiasm_hg38:
+# Alignment to GRCh38 of hifiasm haplotypes
+rule align_hifiasm_hg38_haps:
+    input:
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg.fa", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg.fa", out_prefix = out_bam_prefix)
+    output:
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.bam", out_prefix = out_bam_prefix)
+    shell: """
+        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
+        """
+
+# Alignment to GRCh38 of hifiasm primary and alternate
+rule align_hifiasm_hg38_primary_alternate:
     input:
         expand("{out_prefix}.hifi.hifiasm.a_ctg.fa", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg.fa", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg.fa", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.p_ctg.fa", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.hifi.hifiasm.a_ctg_hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.p_ctg_hg38.bam", out_prefix = out_bam_prefix)
     shell: """
         {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[2]} {output[2]} --log-level=INFO
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[3]} {output[3]} --log-level=INFO
         """
 
-# Alignment to CHM13
-rule align_hifiasm_chm13:
+# Alignment to CHM13 of hifiasm haplotypes
+rule align_hifiasm_chm13_haps:
+    input:
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg.fa", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg.fa", out_prefix = out_bam_prefix)
+    output:
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_chm13.bam", out_prefix = out_bam_prefix)
+    shell: """
+        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
+        """
+
+# Alignment to CHM13 of hifiasm primary and alternate
+rule align_hifiasm_chm13_primary_alternate:
     input:
         expand("{out_prefix}.hifi.hifiasm.a_ctg.fa", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg.fa", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg.fa", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.p_ctg.fa", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.hifi.hifiasm.a_ctg_chm13.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.p_ctg_chm13.bam", out_prefix = out_bam_prefix)
     shell: """
         {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[2]} {output[2]} --log-level=INFO
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[3]} {output[3]} --log-level=INFO
         """
 
 # BUSCO analysis on the assembly fasta -- to be completed the output part once I know the output name
@@ -399,8 +422,8 @@ rule sv_call_pbsv_reads:
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.svsig.gz'),
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.svsig.gz'),
     output:
-        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.svcall.gz'),
-        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.svcall.gz'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.svcall.vcf'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.svcall.vcf'),
     shell: """
         {PBSV} call {HG38FA} --ccs -j 10 {input[0]} {output[0]}
         {PBSV} call {CHM13FA} --ccs -j 10 {input[1]} {output[1]}

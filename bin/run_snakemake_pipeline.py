@@ -107,10 +107,13 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20220920_083142 (2 smrt cells, 2 very low output)
     # RUN STARTED FOR r64050e_20220923_090617 (2 smrt cells, 2 very low output)
     # RUN STARTED FOR r64050e_20220930_085949 (4 smrt cells)
-    # RUN STARTED FOR r64050e_20221007_124347 (3 smrt cells, 1 uploading)
-    # RUN STARTED FOR r64367e_20221010_142232 (2 smrt cells, 2 not there)
+    # RUN STARTED FOR r64050e_20221007_124347 (3 smrt cells)
+    # RUN STARTED FOR r64367e_20221010_142232 (2 smrt cells)
+    # RUN STARTED FOR r64367e_20221017_105039 (3 smrt cells)
+    # RUN STARTED FOR r64050e_20221017_103521 (3 smrt cells)
     #
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
+    print(smrt)
     # create an interactive screen session for the merging script
     screen_name = smrt[-1].split('/')[-1].replace('.yml', '').replace('config_', '')
     os.system("screen -dmS '%s' /bin/bash -i" %(screen_name))
