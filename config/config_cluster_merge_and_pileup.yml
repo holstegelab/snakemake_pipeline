@@ -69,19 +69,29 @@ gfa2fasta:
 
 align_hifiasm_hg38_haps:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 20
 
-align_hifiasm_hg38_primary_alternate:
+align_hifiasm_hg38_primary:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 20
+
+align_hifiasm_hg38_alternate:
+  ntasks: 1
+  ncpupertask: 20
+  mem: 250G
+
+align_hifiasm_chm13_alternate:
+  ntasks: 1
+  ncpupertask: 20
+
+align_hifiasm_chm13_primary:
+  ntasks: 1
+  ncpupertask: 20
+  mem: 250G
 
 align_hifiasm_chm13_haps:
   ntasks: 1
-  ncpupertask: 40
-
-align_hifiasm_chm13_primary_alternate:
-  ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 20
 
 busco_analysis:
   ntasks: 1
@@ -93,11 +103,11 @@ flye_assembly:
 
 align_flye_hg38:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 20
 
 align_flye_chm13:
   ntasks: 1
-  ncpupertask: 40
+  ncpupertask: 20
 
 busco_flye:
   ntasks: 1
@@ -114,3 +124,7 @@ sv_call_pbsv_reads:
 sv_call_sniffles_reads:
   ntasks: 1
   ncpupertask: 10
+
+convertSAM_BAM:
+  ntasks: 1
+  ncpupertask: 4

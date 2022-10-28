@@ -17,6 +17,7 @@ BUSCO='~/.conda/envs/cpg/bin/busco'
 FLYE='~/.conda/envs/cpg/bin/flye'
 PBSV='~/.conda/envs/cpg/bin/pbsv'
 SNIFFLES='~/.conda/envs/cpg/bin/sniffles'
+MINIMAP2='~/.conda/envs/cpg/bin/minimap2'
 
 ### RESOURCES PATHS
 HG38FA='/project/holstegelab/Share/pacbio/resources/GRCh38_full_analysis_set_plus_decoy_hla.fa'
@@ -55,8 +56,6 @@ rule all:
         #expand("{out_prefix}.merged.hifi.deepvariant.chm13.vcf.gz", out_prefix = out_bam_prefix),
 
         # 5. assemblies
-        # convert merged hifi bam to fasta for assembly
-        expand("{out_prefix}.merged.hifi.fasta", out_prefix = out_bam_prefix),
         # hifiasm phased (convert gfa to fasta directly and align to both references)
         expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
@@ -227,7 +226,7 @@ rule bam2fasta:
     input:
         expand("{out_prefix}.merged.hifi.hg38.bam", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.merged.hifi.fasta", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.merged.hifi.fasta", out_prefix = out_bam_prefix))
     shell: """
         {SAMTOOLS} fasta -@ 10 {input[0]} > {output[0]}
         """
@@ -275,9 +274,9 @@ rule align_flye_hg38:
     input:
         expand("{out_prefix}.hifi.flye/assembly.fasta", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.flye/assembly_hg38.bam", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.hifi.flye/assembly_hg38.sam", out_prefix = out_bam_prefix))
     shell: """
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        {MINIMAP2} -ax asm10 -t 20 {HG38FA} {input[0]} > {output[0]}
         """
 
 # Rule to align flye assembly -- chm13
@@ -285,9 +284,9 @@ rule align_flye_chm13:
     input:
         expand("{out_prefix}.hifi.flye/assembly.fasta", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.flye/assembly_chm13.bam", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.hifi.flye/assembly_chm13.sam", out_prefix = out_bam_prefix))
     shell: """
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
+        {MINIMAP2} -ax asm10 -t 20 {CHM13FA} {input[0]} > {output[0]}
         """
 
 # Rule to do BUSCO analysis on flye assembly
@@ -328,24 +327,31 @@ rule align_hifiasm_hg38_haps:
         expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg.fa", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg.fa", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.bam", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.sam", out_prefix = out_bam_prefix)),
+        temp(expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.sam", out_prefix = out_bam_prefix))
     shell: """
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
+        {MINIMAP2} -ax asm10 -t 20 {HG38FA} {input[0]} > {output[0]}
+        {MINIMAP2} -ax asm10 -t 20 {HG38FA} {input[1]} > {output[1]}
         """
 
-# Alignment to GRCh38 of hifiasm primary and alternate
-rule align_hifiasm_hg38_primary_alternate:
+# Alignment to GRCh38 of hifiasm primary
+rule align_hifiasm_hg38_primary:
     input:
-        expand("{out_prefix}.hifi.hifiasm.a_ctg.fa", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.p_ctg.fa", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.hifiasm.a_ctg_hg38.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.p_ctg_hg38.bam", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.hifi.hifiasm.p_ctg_hg38.sam", out_prefix = out_bam_prefix))
     shell: """
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
-        {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
+        {MINIMAP2} -ax asm10 -t 20 {HG38FA} {input[0]} > {output[0]}
+        """
+
+# Alignment to GRCh38 of hifiasm alternate
+rule align_hifiasm_hg38_alternate:
+    input:
+        expand("{out_prefix}.hifi.hifiasm.a_ctg.fa", out_prefix = out_bam_prefix)
+    output:
+        temp(expand("{out_prefix}.hifi.hifiasm.a_ctg_hg38.sam", out_prefix = out_bam_prefix))
+    shell: """
+        {MINIMAP2} -ax asm10 -t 20 {HG38FA} {input[0]} > {output[0]}
         """
 
 # Alignment to CHM13 of hifiasm haplotypes
@@ -354,24 +360,68 @@ rule align_hifiasm_chm13_haps:
         expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg.fa", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg.fa", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_chm13.bam", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_chm13.sam", out_prefix = out_bam_prefix)),
+        temp(expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_chm13.sam", out_prefix = out_bam_prefix))
     shell: """
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
+        {MINIMAP2} -ax asm10 -t 20 {CHM13FA} {input[0]} > {output[0]}
+        {MINIMAP2} -ax asm10 -t 20 {CHM13FA} {input[1]} > {output[1]}
         """
 
-# Alignment to CHM13 of hifiasm primary and alternate
-rule align_hifiasm_chm13_primary_alternate:
+# Alignment to CHM13 of hifiasm primary
+rule align_hifiasm_chm13_primary:
     input:
-        expand("{out_prefix}.hifi.hifiasm.a_ctg.fa", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.p_ctg.fa", out_prefix = out_bam_prefix)
     output:
-        expand("{out_prefix}.hifi.hifiasm.a_ctg_chm13.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.hifiasm.p_ctg_chm13.bam", out_prefix = out_bam_prefix)
+        temp(expand("{out_prefix}.hifi.hifiasm.p_ctg_chm13.sam", out_prefix = out_bam_prefix))
     shell: """
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
-        {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[1]} {output[1]} --log-level=INFO
+        {MINIMAP2} -ax asm10 -t 20 {CHM13FA} {input[0]} > {output[0]}
+        """
+
+# Alignment to CHM13 of hifiasm alternate
+rule align_hifiasm_chm13_alternate:
+    input:
+        expand("{out_prefix}.hifi.hifiasm.a_ctg.fa", out_prefix = out_bam_prefix)
+    output:
+        temp(expand("{out_prefix}.hifi.hifiasm.a_ctg_chm13.sam", out_prefix = out_bam_prefix))
+    shell: """
+        {MINIMAP2} -ax asm10 -t 20 {CHM13FA} {input[0]} > {output[0]}
+        """
+
+# Convert SAM to BAM
+rule convertSAM_BAM:
+    input:
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.p_ctg_hg38.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.a_ctg_hg38.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_chm13.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_chm13.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.p_ctg_chm13.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.a_ctg_chm13.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.flye/assembly_hg38.sam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.flye/assembly_chm13.sam", out_prefix = out_bam_prefix)  
+    output:
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.a_ctg_hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.p_ctg_chm13.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.hifiasm.a_ctg_chm13.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.flye/assembly_hg38.bam", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.flye/assembly_chm13.bam", out_prefix = out_bam_prefix)
+    shell:"""
+        {SAMTOOLS} view -bS -@ 3 {input[0]} > {output[0]}
+        {SAMTOOLS} view -bS -@ 3 {input[1]} > {output[1]}
+        {SAMTOOLS} view -bS -@ 3 {input[2]} > {output[2]}
+        {SAMTOOLS} view -bS -@ 3 {input[3]} > {output[3]}
+        {SAMTOOLS} view -bS -@ 3 {input[4]} > {output[4]}
+        {SAMTOOLS} view -bS -@ 3 {input[5]} > {output[5]}
+        {SAMTOOLS} view -bS -@ 3 {input[6]} > {output[6]}
+        {SAMTOOLS} view -bS -@ 3 {input[7]} > {output[7]}
+        {SAMTOOLS} view -bS -@ 3 {input[8]} > {output[8]}
+        {SAMTOOLS} view -bS -@ 3 {input[9]} > {output[9]}
         """
 
 # BUSCO analysis on the assembly fasta -- to be completed the output part once I know the output name
