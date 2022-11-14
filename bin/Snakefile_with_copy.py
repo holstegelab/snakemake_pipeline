@@ -18,6 +18,8 @@ MOSDEPTH="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/mosdep
 ASBT="/project/holstegelab/Software/nicco/tools/asbt/build/asbt"
 ACTC='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/actc'
 DEEPCONSENSUS='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/deepconsensus'
+EXTRACT_READS_INFO='/project/holstegelab/Software/snakemake_pipeline/bin/extract_read_information.py'
+PLOT_READS_INFO='/project/holstegelab/Software/snakemake_pipeline/bin/plot_read_information.R'
 
 ### RESOURCE PATHS
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
@@ -124,6 +126,7 @@ rule all:
         # 11. coverage summary
         #expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = out_name)
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage_summary.txt", out_dir = config["OUT_DIR"], out_name = out_name),
+        expand("{out_dir}/{out_name}.ccs.reads_summary.png", out_dir = config["OUT_DIR"], out_name = out_name),
         # 12. deep consensus
         expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons.bam", out_dir = config["OUT_DIR"], out_name = out_name)
         #expand("{out_dir}/{out_name}.ccs.deepConsensus.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -251,6 +254,19 @@ rule coverage_summary:
         tail -1 {output[0]} >> {params.pfx_main}
         """
 
+# Rule to plot and save read length distribution of hifi and non-hifi reads
+rule read_length_distr:
+    input:
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}.ccs.reads_summary.txt", out_dir = config["OUT_DIR"], out_name = out_name),
+        expand("{out_dir}/{out_name}.ccs.reads_summary.png", out_dir = config["OUT_DIR"], out_name = out_name)
+    shell: """
+        {PYTHON} {EXTRACT_READS_INFO} {input[0]} {input[1]}
+        /usr/bin/Rscript {PLOT_READS_INFO} {output[0]}
+        """
+
 # DeepConsensus
 # Deepconsensus is a 2-step process: first, CCS should be run with --min-rq=0.88 and default for passes.
 # Then, deepconsensus first aligns subreads to the actual ccs (actc), and then deepconsensus polishes reads
@@ -276,6 +292,15 @@ rule align_ccs_subreads_deepcons:
         expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons_aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name)
     shell: """
         {ACTC} -j 40 {input[0]} {input[1]} {output[0]}
+        """
+
+rule split_alignment_file:
+    input:
+        expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons_aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    output:
+        expand("{out_dir}/{out_name}_deepconsensus_shards/{out_name}.shard0.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+    shell: """
+        {PYTHON} {SPLIT_BEFORE_DEEPCONS} {input[0]} 500
         """
 
 # Rule to run deepConsensus

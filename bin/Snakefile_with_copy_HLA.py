@@ -103,13 +103,13 @@ dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
 rule all:
     input:
         # 1. copy from dcache
-        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
+        #expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
         # 2. md5 check sum
-        expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
+        #expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
         # 3. do ccs analysis keeping all kinetics values
         expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 4. run primrose analysis -- commented out 
-        expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name),
+        #expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name),
         # 5. extract hifi and non-hifi reads
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
 

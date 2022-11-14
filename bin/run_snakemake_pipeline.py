@@ -113,6 +113,8 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64050e_20221017_103521 (4 smrt cells)
     # RUN STARTED FOR r64050e_20221024_101008 (4 smrt cells)
     # RUN STARTED FOR r64367e_20221024_101735 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20221101_093432 (3 smrt cells)
+    # RUN STARTED FOR r64367e_20221101_093855 (3 smrt cells)
     #
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     print(smrt)

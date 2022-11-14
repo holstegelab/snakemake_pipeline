@@ -95,7 +95,7 @@ for sample in samples_files.keys():
     if sample != 'NA':
         smrt_cells_n, total_coverage = samples_files[sample][-2], samples_files[sample][-1]
         diagnosis = samples_files[sample][0][-1]
-        if smrt_cells_n >= 2 and total_coverage >= 12:
+        if smrt_cells_n >= 2 and total_coverage >= 13:
             smrt_cells = [x[0].replace('.ccs.primrose.hifi.hg38.coverage_summary.txt', '') for x in samples_files[sample] if isinstance(x, list)]
             prepare_config(smrt_cells, sample, diagnosis)
 

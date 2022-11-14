@@ -3,6 +3,7 @@ import os
 import csv
 import sys
 import re
+import random
 
 ### SOFTWARE PATHS
 SAMTOOLS='/project/holstegelab/Software/nicco/tools/samtools-1.11/samtools'
@@ -26,12 +27,25 @@ CHM13FA='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0.
 MODELDIR="/project/holstegelab/Share/oscar/software/CpG-main/models/pileup_calling_model"
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
 CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_hifi.mmi'
+DCACHE_CONFIG='/project/holstegelab/Data/dcache.conf'
 
 CACHE=None
 
 ### MAIN -- run before the rules -- identify input files and do md5sum check of the files
 inp_bam_prefix = config["IN_FILES"].split(',')
 out_bam_prefix = config["OUT_FILE"]
+sample_type = out_bam_prefix.split('/')[-2]
+dcache_folder = ""
+files_to_copy = ""
+files_to_copy_names = []
+if sample_type in ['ad', 'centenarian']:
+    dcache_folder = 'ad_centenarians'
+    for s in inp_bam_prefix:
+        tmp_files = os.popen('ls ' + s + '.ccs.*').read().replace('\n', ',')
+        print(tmp_files)
+        fnames = [x.split('/')[-1] for x in tmp_files.split(',') if x.split('/')[-1] != ""]
+        files_to_copy = files_to_copy + tmp_files
+        files_to_copy_names = files_to_copy_names + fnames
 
 print("## Input files prefix --> %s" %(inp_bam_prefix))
 print("## Output files prefix --> %s" %(out_bam_prefix))
@@ -85,7 +99,11 @@ rule all:
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.sniffles.vcf'),
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.sniffles.snf'),
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.sniffles.vcf'),
-        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.sniffles.snf')
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.sniffles.snf'),
+
+        # Clean up data from single smrt cells
+        ['/project/holstegelab/Software/snakemake_pipeline/trashbin/' + x for x in files_to_copy_names]
+
 
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
@@ -495,3 +513,22 @@ rule sv_call_sniffles_reads:
         {SNIFFLES} --input {input[0]} --vcf {output[0]} --snf {output[1]} --minsupport 2 --mapq 20 -t 10
         {SNIFFLES} --input {input[2]} --vcf {output[2]} --snf {output[3]} --minsupport 2 --mapq 20 -t 10
         """
+
+# Copy single-smrt cells data to dcache when the merging is done and remove them from storage
+rule rclone_copy_check_move:
+    input:
+        [x for x in files_to_copy.split(',') if x != '']
+    output:
+        ['/project/holstegelab/Software/snakemake_pipeline/trashbin/' + x for x in files_to_copy_names]
+    run:
+        for f in input:
+            print(f)
+            # rclone copy
+            os.system('rclone copy -vv --progress --multi-thread-streams 1 --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:tape/data_processed/ccs/' + dcache_folder + '/')
+            # rclone check
+            tmp_check = 'tmp_check_' + str(random.randint(1, 1000000)) + '.txt'
+            os.system('rclone check ' + f + ' ~/dcache/tape/data_processed/ccs/' + dcache_folder + '/ --combined ' + tmp_check + ' --size-only --config ' + DCACHE_CONFIG)
+            check_res = os.popen("awk '{print $1}' " + tmp_check).read().replace('\n', '')
+            if check_res == '=':
+                os.system('rm ' + tmp_check)
+                os.system('mv ' + f + ' /project/holstegelab/Software/snakemake_pipeline/trashbin/')
