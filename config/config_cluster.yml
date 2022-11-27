@@ -49,4 +49,8 @@ align_ccs_subreads_deepcons:
 
 deepconsensus_run:
   ntasks: 1
-  ncpupertask: 50
+  ncpupertask: 20
+
+demultiplexing:
+  ntasks: 1
+  ncpupertask: 10

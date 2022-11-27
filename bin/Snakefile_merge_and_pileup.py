@@ -28,6 +28,8 @@ MODELDIR="/project/holstegelab/Share/oscar/software/CpG-main/models/pileup_calli
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
 CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_hifi.mmi'
 DCACHE_CONFIG='/project/holstegelab/Data/dcache.conf'
+DCACHE_PATH='/home/holstegelab-ntesi/dcache/tape/data_processed/ccs'
+TRASHBIN_PATH='/project/holstegelab/Software/snakemake_pipeline/trashbin'
 
 CACHE=None
 
@@ -36,16 +38,8 @@ inp_bam_prefix = config["IN_FILES"].split(',')
 out_bam_prefix = config["OUT_FILE"]
 sample_type = out_bam_prefix.split('/')[-2]
 dcache_folder = ""
-files_to_copy = ""
-files_to_copy_names = []
 if sample_type in ['ad', 'centenarian']:
     dcache_folder = 'ad_centenarians'
-    for s in inp_bam_prefix:
-        tmp_files = os.popen('ls ' + s + '.ccs.*').read().replace('\n', ',')
-        print(tmp_files)
-        fnames = [x.split('/')[-1] for x in tmp_files.split(',') if x.split('/')[-1] != ""]
-        files_to_copy = files_to_copy + tmp_files
-        files_to_copy_names = files_to_copy_names + fnames
 
 print("## Input files prefix --> %s" %(inp_bam_prefix))
 print("## Output files prefix --> %s" %(out_bam_prefix))
@@ -102,8 +96,9 @@ rule all:
         expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.sniffles.snf'),
 
         # Clean up data from single smrt cells
-        ['/project/holstegelab/Software/snakemake_pipeline/trashbin/' + x for x in files_to_copy_names]
-
+        #expand("{dcache_path}/{pheno_folder}/{fname}", dcache_path = DCACHE_PATH, pheno_folder = dcache_folder, fname = files_to_copy_names),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.files_copied.txt'),
+        expand("{trashbin_path}/{fname}.files_copied.txt", trashbin_path = TRASHBIN_PATH, fname = out_bam_prefix.split('/')[-1])
 
 ### RULES FOR HG38
 # Rule to merge hifi data aligned to hg38
@@ -515,20 +510,55 @@ rule sv_call_sniffles_reads:
         """
 
 # Copy single-smrt cells data to dcache when the merging is done and remove them from storage
-rule rclone_copy_check_move:
+rule rclone_copy:
     input:
-        [x for x in files_to_copy.split(',') if x != '']
+        expand("{out_prefix}.merged.hifi.deepvariant.hg38.vcf.gz", out_prefix = out_bam_prefix),
+        expand("{out_prefix}_primary_BUSCO/logs/busco.log", out_prefix = out_bam_prefix),
+        expand("{out_prefix}_alternate_BUSCO/logs/busco.log", out_prefix = out_bam_prefix),
+        expand("{out_prefix}_hap1_BUSCO/logs/busco.log", out_prefix = out_bam_prefix),
+        expand("{out_prefix}_hap2_BUSCO/logs/busco.log", out_prefix = out_bam_prefix),
+        expand("{out_prefix}.hifi.flye/{sample_name}_BUSCO/logs/busco.log", out_prefix = out_bam_prefix, sample_name = out_bam_prefix.split('/')[-1]),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.svcall.vcf'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.svcall.vcf'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.hg38.sniffles.vcf'),
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.merged.hifi.chm13.sniffles.vcf')
     output:
-        ['/project/holstegelab/Software/snakemake_pipeline/trashbin/' + x for x in files_to_copy_names]
+        #expand("{dcache_path}/{pheno_folder}/{fname}", dcache_path = DCACHE_PATH, pheno_folder = dcache_folder, fname = files_to_copy_names)
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.files_copied.txt')
     run:
-        for f in input:
-            print(f)
+        files_to_copy = ""
+        for s in inp_bam_prefix:
+            tmp_files = os.popen('ls ' + s + '.ccs.*').read().replace('\n', ',')
+            files_to_copy = files_to_copy + tmp_files
+        files_to_copy = [x for x in files_to_copy.split(',') if x != '']
+        files_copied = []
+        for f in files_to_copy:
             # rclone copy
-            os.system('rclone copy -vv --progress --multi-thread-streams 1 --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:tape/data_processed/ccs/' + dcache_folder + '/')
+            shell('sleep 10s')
+            shell('rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} {input_file} dcache:tape/data_processed/ccs/{dcache_folder_path}/'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder))
+            #os.system('rclone copy -vv --progress --multi-thread-streams 1 --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:tape/data_processed/ccs/' + dcache_folder + '/')            
+            shell('echo {input_file} >> {output_name}'.format(input_file=f, output_name=output))
+
+# Check if the copy went fine and move the original data
+rule rclone_check_move:
+    input:
+        expand("{inp_prefix}", inp_prefix = out_bam_prefix + '.files_copied.txt')
+    output:
+        expand("{trashbin_path}/{fname}.files_copied.txt", trashbin_path = TRASHBIN_PATH, fname = out_bam_prefix.split('/')[-1])
+    run:
+        # read file containing copied files
+        copied_files = open(out_bam_prefix + '.files_copied.txt').readlines()
+        for f in copied_files:
+            f = f.rstrip()
             # rclone check
             tmp_check = 'tmp_check_' + str(random.randint(1, 1000000)) + '.txt'
-            os.system('rclone check ' + f + ' ~/dcache/tape/data_processed/ccs/' + dcache_folder + '/ --combined ' + tmp_check + ' --size-only --config ' + DCACHE_CONFIG)
-            check_res = os.popen("awk '{print $1}' " + tmp_check).read().replace('\n', '')
-            if check_res == '=':
-                os.system('rm ' + tmp_check)
-                os.system('mv ' + f + ' /project/holstegelab/Software/snakemake_pipeline/trashbin/')
+            shell('rclone check --config {DCACHE_CONFIG} {input_file} dcache:/tape/data_processed/ccs/{dcache_folder_path}/ --combined {tmp_check_path} --size-only'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder, tmp_check_path=tmp_check))
+            #os.system('rclone check --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:/tape/data_processed/ccs/' + dcache_folder + '/ --combined ' + tmp_check + ' --size-only')
+            tmp_check_open = open(tmp_check).readlines()[0].split(' ')[0]
+            if tmp_check_open == '=':
+                shell('rm {tmp_check_file}'.format(tmp_check_file=tmp_check))
+                #os.system('rm ' + tmp_check)
+                shell('mv {input_file} /project/holstegelab/Software/snakemake_pipeline/trashbin/'.format(input_file=f))
+                #os.system('mv ' + f + ' /project/holstegelab/Software/snakemake_pipeline/trashbin/')
+        # at the end, also move the file containing the files to copy
+        shell('cp {checkfile} /project/holstegelab/Software/snakemake_pipeline/trashbin/'.format(checkfile = input))

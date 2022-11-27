@@ -16,10 +16,10 @@ ALIGN="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/pbmm2"
 SAMPLE_CHECK="/project/holstegelab/Software/snakemake_pipeline/bin/sample_check.py"
 MOSDEPTH="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/mosdepth"
 ASBT="/project/holstegelab/Software/nicco/tools/asbt/build/asbt"
-SAMTOOLS='/project/holstegelab/Software/nicco/tools/samtools-1.11/samtools'
 ACTC='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/actc'
 DEEPCONSENSUS='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/deepconsensus'
-LIMA='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/lima'
+EXTRACT_READS_INFO='/project/holstegelab/Software/snakemake_pipeline/bin/extract_read_information.py'
+PLOT_READS_INFO='/project/holstegelab/Software/snakemake_pipeline/bin/plot_read_information.R'
 
 ### RESOURCE PATHS
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
@@ -28,7 +28,6 @@ CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0
 CHM13SUBREADS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_subreads.mmi'
 DCACHE_CONFIG='/project/holstegelab/Data/dcache.conf'
 DEEPCONSENSUS_MODEL='/project/holstegelab/Software/nicco/tools/deepConsensun_examples/checkpoint'
-BARCODES='/project/holstegelab/Share/pacbio/data_processed/HLA_project/barcodes_sets/SMRTbell_Barcoded_Adapter_Plate_3.0_bc2001-bc2096.fasta'
 
 CACHE=None
 
@@ -100,22 +99,21 @@ if not path.isdir('%s/%s/%s' %(config["OUT_DIR"], folder_name, smrt_id)):
 # then adjust the output name and the path to be used as input for the dcache copy
 out_name = out_name.split('.')[0]
 dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
+# define how many shards to do
+shard_n = 100
+all_shards = [x + 1 for x in range(shard_n)]
 
 # Rule to manage output files and order of snakemake processes
 rule all:
     input:
-        # 1. copy from dcache
-        #expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
-        # 2. md5 check sum
+        # 1. copy data to spider
         #expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
-        # 3. do ccs analysis keeping all kinetics values
-        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 4. run primrose analysis -- commented out 
-        #expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 5. extract hifi and non-hifi reads
-        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-        expand("{out_dir}/{out_name}.ccs.demultiplexed.lima.summary", out_dir = config["OUT_DIR"], out_name = out_name),
-        expand("{out_dir}/{out_name}.ccs.demultiplexed.0--0.fq", out_dir = config["OUT_DIR"], out_name = out_name)
+        # 2. do ccs analysis keeping all kinetics values
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards),
+        # 3. align subreads to ccs
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards),
+        # 4. deep consensus
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.deepConsensus.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards)
 
 # Rule to copy data from dcache
 rule dcache_copy:
@@ -143,77 +141,53 @@ rule md5_check:
 rule ccs:
     input:
         expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
-        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
+        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
     output:
-        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        expand("{out_dir}/{out_name}.ccs.report.txt", out_dir = config["OUT_DIR"], out_name = out_name),
-        expand("{out_dir}/{out_name}.ccs.log", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards),
     run:
         # check md5check and decide whether go on with the pipeline (if checksum was OK) or stop
         RUN = open('%s/%s/%s/snakemake_checksum.txt' %(config["OUT_DIR"], folder_name, smrt_id)).readlines()[0].rstrip()
         if RUN == 'True':
-            #shell("{CCS} --min-passes 0 --min-rq 0 {input[1]} {output[0]} --report-file {output[1]} --log-file {output[2]} --log-level INFO --all-kinetics")
-            shell("{CCS} {input[1]} {output[0]} --report-file {output[1]} --log-file {output[2]} --log-level INFO")
+            for x in range(len(all_shards)):
+                outname = output[x]
+                shell("{CCS} --min-rq 0.88 --chunk={n}/{n_tot} {input} {outname}".format(CCS=CCS, n=all_shards[x], n_tot=shard_n, input=input[1], outname=outname))
 
-# Rule for methylation analysis with primrose
-rule primrose:
+# Rule to calculate coverage summary
+rule coverage_summary:
     input:
-        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name)
     output:
-        temp(expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name))
-    shell: """
-        {PRIMROSE} --min-passes 0 {input[0]} {output[0]} 
-        """
-
-# Rule for extracting CCS and non-CCS reads
-rule extract_ccs_nonccs:
-    input:
-        expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    output:
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    shell: """
-        {PYTHON} {EXTRACT_CCS} {input[0]} {output[0]} {output[1]}
-        """
-
-# Rule for demultiplexing hifi only
-rule demultiplexing:
-    input:
-        expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage_summary.txt", out_dir = config["OUT_DIR"], out_name = out_name)
     params:
-        pfx = expand("{out_dir}/{out_name}.ccs.demultiplexed.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-        #pfx = expand("{out_dir}/{out_name}.ccs.primrose.hifi.demultiplexed.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    output:
-        expand("{out_dir}/{out_name}.ccs.demultiplexed.lima.summary", out_dir = config["OUT_DIR"], out_name = out_name)
-        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.demultiplexed.lima.summary", out_dir = config["OUT_DIR"], out_name = out_name)
+        pfx_name = expand("{out_name}", out_name = out_name),
+        pfx_main = expand("/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt")
     shell: """
-        {LIMA} --ccs --split --min-score 80 --min-end-score 50 --min-ref-span 0.75 --same --ignore-missing-adapters -j 10 {input[0]} {BARCODES} {params.pfx}
+        printf "GLOBAL_MEDIAN_READ_LENGTH\tGLOBAL_COVERAGE\tMAPPED_COVERAGE\tMAPPED_READS\tALT_COVERAGE\tALT_READS\tUNMAPPED_COVERAGE\tUNMAPPED_READS\n{params.pfx_name}\t" > {output[0]}
+        {ASBT} cov -g 3088000000 {input[0]} >> {output[0]}
+        tail -1 {output[0]} >> {params.pfx_main}
         """
 
-# Rule for demultiplexing hifi only
-rule demultiplexing_nonhifi:
+# Rule to align the created set of CCS reads back to the subreads
+rule align_ccs_subreads_deepcons:
     input:
-        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    params:
-        pfx = expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.demultiplexed.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards)
     output:
-        expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.demultiplexed.lima.summary", out_dir = config["OUT_DIR"], out_name = out_name)
-    shell: """
-        {LIMA} --ccs --split --min-score 80 --min-end-score 50 --min-ref-span 0.75 --same --ignore-missing-adapters -j 10 {input[0]} {BARCODES} {params.pfx}
-        """
-
-# Rule for converting bam to fastq
-rule convert_to_fastq:
-    input:
-        expand("{out_dir}/{out_name}.ccs.demultiplexed.lima.summary", out_dir = config["OUT_DIR"], out_name = out_name)
-    params:
-        path = expand("{out_dir}/", out_dir = config["OUT_DIR"])
-    output:
-        expand("{out_dir}/{out_name}.ccs.demultiplexed.0--0.fq", out_dir = config["OUT_DIR"], out_name = out_name)
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards)
     run:
-        shell('ls {out_dir}/{out_name}.ccs.demultiplexed.*.bam > {out_dir}/{out_name}.filelist.txt'.format(out_dir = config["OUT_DIR"], out_name = out_name))
-        flist = open(config["OUT_DIR"] + '/' + out_name + '.filelist.txt').readlines()
-        for f in flist:
-            outname = f.replace('.bam', '.fq')
-            shell('{SAMTOOLS} bam2fq {inp_bam} > {out_fq}'.format(SAMTOOLS = SAMTOOLS, inp_bam = f, out_fq = outname))
+        for x in range(len(all_shards)):
+            input_name = input[x]
+            output_name = output[x]
+            shell("{ACTC} -j 40 {out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam {input_ccs} {output_aln}".format(ACTC=ACTC, out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name, input_ccs=input_name, output_aln=output_name))
+
+# Rule to run deepConsensus
+rule deepconsensus_run:
+    input:
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards)
+    output:
+        expand("{out_dir}/deepconsensus/{out_name}.ccs_{shard}.deepConsensus.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards)
+    run:
+        for x in range(len(all_shards)):
+            input_ccs = input[x].replace('.aln_subreads.bam', '.bam')
+            input_aln = input[x]
+            out_file = output[x]
+            shell("{DEEPCONSENSUS} run --subreads_to_ccs={input_aln} --ccs_bam={input_ccs} --checkpoint={DEEPCONSENSUS_MODEL} --output={out_file}".format(DEEPCONSENSUS=DEEPCONSENSUS, input_aln=input_aln, input_ccs=input_ccs, DEEPCONSENSUS_MODEL=DEEPCONSENSUS_MODEL, out_file=out_file))

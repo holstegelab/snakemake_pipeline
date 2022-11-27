@@ -30,12 +30,14 @@ dcache_data = [x.rstrip() for x in os.popen("find ~/dcache/ -name '*subreads.bam
 
 # 2. list all processed files
 proces_data = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed -name '*.ccs.log'")]
+proces_data_dcache = [x.rstrip() for x in os.popen("find ~/dcache/tape/data_processed/ccs/ -name '*.ccs.log'")]
+all_proces_data = proces_data + proces_data_dcache
 
 # 3. loop through dcache files and see what has been done and what needs to be done
 done = []; to_be_done = []
 for subread in dcache_data:
     movie_id = subread.split('/')[-1].replace('.subreads.bam', '')
-    if len(list(filter(lambda x:movie_id in x, proces_data))) >0:
+    if len(list(filter(lambda x:movie_id in x, all_proces_data))) >0:
         done.append([movie_id, subread])
     else:
         to_be_done.append([movie_id, subread])
@@ -113,9 +115,17 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64050e_20221017_103521 (4 smrt cells)
     # RUN STARTED FOR r64050e_20221024_101008 (4 smrt cells)
     # RUN STARTED FOR r64367e_20221024_101735 (4 smrt cells)
-    # RUN STARTED FOR r64050e_20221101_093432 (3 smrt cells)
-    # RUN STARTED FOR r64367e_20221101_093855 (3 smrt cells)
+    # RUN STARTED FOR r64050e_20221101_093432 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20221101_093855 (4 smrt cells)
+    # RUN STARTED FOR r64037e_20220822_121303 (3 smrt cells)*
+    # RUN STARTED FOR r64037e_20221027_131940 (1 smrt cells)***
+    # RUN STARTED FOR r64346e_20220825_091344 (2 smrt cells)**
+    # RUN STARTED FOR r64050e_20221108_120220 (3 smrt cells)*
+    # RUN STARTED FOR r64367e_20221108_120723 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20221115_131805 (3 smrt cells)*
+    # RUN STARTED FOR r64367e_20221115_132247 (3 smrt cells)*
     #
+    smrt = smrt_to_run[0]
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     print(smrt)
     # create an interactive screen session for the merging script

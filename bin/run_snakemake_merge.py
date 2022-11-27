@@ -105,7 +105,7 @@ config_files = os.popen("ls /project/holstegelab/Software/snakemake_pipeline/con
 # to make sure we don't run the same sample multiple times, load file with submitted runs
 submitted = os.popen('cat /project/holstegelab/Software/snakemake_pipeline/config/config_merge/merged_submitted.txt').read().rstrip().split()
 new_submission = []
-for config in config_files:
+for config in config_files[0:5]:
     # check if this submission was already done
     if config in submitted:
         print('!!! sample with config file --> %s was already submitted. Skipping to next sample.' %(config))
