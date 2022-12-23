@@ -91,13 +91,19 @@ for sample in samples_files.keys():
     samples_files[sample].append(total_coverage)
 
 # 5. for the samples with coverage >= 12 and at least 2 smrt cells, prepare configuration files
+# also list all samples that have already been done
+done_samples = [x.rstrip() for x in os.popen('ls /project/holstegelab/Software/snakemake_pipeline/config/config_merge/').readlines()]
+done_samples = [x.split('_')[1] for x in done_samples]
 for sample in samples_files.keys():
     if sample != 'NA':
-        smrt_cells_n, total_coverage = samples_files[sample][-2], samples_files[sample][-1]
-        diagnosis = samples_files[sample][0][-1]
-        if smrt_cells_n >= 2 and total_coverage >= 13:
-            smrt_cells = [x[0].replace('.ccs.primrose.hifi.hg38.coverage_summary.txt', '') for x in samples_files[sample] if isinstance(x, list)]
-            prepare_config(smrt_cells, sample, diagnosis)
+        if sample in done_samples:
+            print('found %s' %(sample))
+        else:
+            smrt_cells_n, total_coverage = samples_files[sample][-2], samples_files[sample][-1]
+            diagnosis = samples_files[sample][0][-1]
+            if smrt_cells_n >= 2 and total_coverage >= 13:
+                smrt_cells = [x[0].replace('.ccs.primrose.hifi.hg38.coverage_summary.txt', '') for x in samples_files[sample] if isinstance(x, list)]
+                prepare_config(smrt_cells, sample, diagnosis)
 
 # 6. finally submit jobs to the cluster (open a screen window, load conda environment, submit command)
 # list all config files
@@ -105,26 +111,29 @@ config_files = os.popen("ls /project/holstegelab/Software/snakemake_pipeline/con
 # to make sure we don't run the same sample multiple times, load file with submitted runs
 submitted = os.popen('cat /project/holstegelab/Software/snakemake_pipeline/config/config_merge/merged_submitted.txt').read().rstrip().split()
 new_submission = []
-for config in config_files[0:5]:
+counter = 0
+for config in config_files:
     # check if this submission was already done
     if config in submitted:
         print('!!! sample with config file --> %s was already submitted. Skipping to next sample.' %(config))
         pass
     else:
-        print('XXX submitting sample with config file --> %s' %(config))
-        # if the run is new, add it to the file
-        fout = open('/project/holstegelab/Software/snakemake_pipeline/config/config_merge/merged_submitted.txt', 'a')
-        fout.write('%s\n' %(config))
-        fout.close()
-        new_submission.append(config)
-        # create an interactive screen session for the merging script
-        os.system("screen -dmS 'merge_%s' /bin/bash -i" %(config.split('_')[1]))
-        # then run in this screen session to load the right conda environment
-        os.system("screen -S 'merge_%s' -X stuff 'conda activate cpg^M'" %(config.split('_')[1]))
-        # then run command to go to the right directory
-        os.system("screen -S 'merge_%s' -X stuff 'cd /project/holstegelab/Software/snakemake_pipeline/slurms_outputs^M'" %(config.split('_')[1]))
-        # finally run the actual snakemake script
-        os.system("screen -S 'merge_%s' -X stuff 'sh /project/holstegelab/Software/snakemake_pipeline/bin/submit_merge_and_pileup.sh /project/holstegelab/Software/snakemake_pipeline/config/config_merge/%s^M'" %(config.split('_')[1], config))
+        counter = counter + 1
+        if counter <10:
+            print('XXX submitting sample with config file --> %s' %(config))
+            # if the run is new, add it to the file
+            fout = open('/project/holstegelab/Software/snakemake_pipeline/config/config_merge/merged_submitted.txt', 'a')
+            fout.write('%s\n' %(config))
+            fout.close()
+            new_submission.append(config)
+            # create an interactive screen session for the merging script
+            os.system("screen -dmS 'merge_%s' /bin/bash -i" %(config.split('_')[1]))
+            # then run in this screen session to load the right conda environment
+            os.system("screen -S 'merge_%s' -X stuff 'conda activate cpg^M'" %(config.split('_')[1]))
+            # then run command to go to the right directory
+            os.system("screen -S 'merge_%s' -X stuff 'cd /project/holstegelab/Software/snakemake_pipeline/slurms_outputs^M'" %(config.split('_')[1]))
+            # finally run the actual snakemake script
+            os.system("screen -S 'merge_%s' -X stuff 'sh /project/holstegelab/Software/snakemake_pipeline/bin/submit_merge_and_pileup.sh /project/holstegelab/Software/snakemake_pipeline/config/config_merge/%s^M'" %(config.split('_')[1], config))
 
 # 7. it's good to add merging information to the main excel i'm maintaining with run information. Generate a freeze tha can be easily copied into excel
 if exists('/project/holstegelab/Software/snakemake_pipeline/config/config_merge/freeze_merged_submitted.txt'):
