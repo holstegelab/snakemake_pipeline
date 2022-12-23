@@ -9,6 +9,7 @@ from os import path
 PYTHON="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/python"
 PRIMROSE="/project/holstegelab/Software/conda/miniconda3_v1/envs/py39/bin/primrose"
 CCS="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/ccs"
+CCS_LAST="/home/holstegelab-ntesi/.conda/envs/smrtlink11/bin/ccs"
 MD5="/usr/bin/md5sum"
 EXTRACT_CCS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_and_nonCCS.py"
 EXTRACT_CCS_DEEPCONS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_and_nonCCS_forDeepCons.py"
@@ -87,15 +88,7 @@ def checkSum(path, MD5):
     return RUN
 
 ### MAIN -- run before the rules
-
-FOLDER_NAMES = {}
-SMRT_IDS = {}
-print("## Input subreads in dcache --> %s" %(config["IN_DIR"]))
-print("## Output directory --> %s" %(config["OUT_DIR"]))
-# create folder to place files copied from dcache
-
 folder_name, smrt_id, out_name = config["IN_DIR"].split('/')[-3::]
-
 if not path.isdir('%s/%s' %(config["OUT_DIR"], folder_name)):
     os.system('mkdir %s/%s' %(config["OUT_DIR"], folder_name))
 # also check if a folder with the smrt_id name is present
@@ -104,101 +97,23 @@ if not path.isdir('%s/%s/%s' %(config["OUT_DIR"], folder_name, smrt_id)):
 # then adjust the output name and the path to be used as input for the dcache copy
 out_name = out_name.split('.')[0]
 dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
-# define how many shards to do
-shard_n = 100
-all_shards = [x + 1 for x in range(shard_n)]
-FOLDER_NAMES[out_name] = folder_name
-SMRT_IDS[out_name] = smrt_id
-print(FOLDER_NAMES)
-print(SMRT_IDS)
 
 # Rule to manage output files and order of snakemake processes
 rule all:
     input:
-        expand("{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.deepConsensus.bam", out_dir = config["OUT_DIR"], out_name = out_name, shard = all_shards)
-
-# Rule to copy data from dcache
-rule dcache_copy:
-    output:
-        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
-    params:
-        inp = expand("%s" %(dcache_path)),
-        pfx = expand("{out_dir}/{folder_name}/{smrt_id}", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id)
-    shell: """
-        rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} dcache:{params.inp}/ {params.pfx}/
-        """
-
-# Rule to perform md5 sum check if this is available
-rule md5_check:
-    input:
-        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
-    output:
-        expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id)
-    params:
-        inp = expand("{out_dir}/{folder_name}/{smrt_id}", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id)
-    run:
-        RUN = checkSum("%s/%s/%s" %(config["OUT_DIR"], folder_name, smrt_id), MD5)
-
-def read_ccs_input(wildcards):
-    folder_name = FOLDER_NAMES[wildcards["out_name"]]
-    smrt_id = SMRT_IDS[wildcards["out_name"]]
-    input1 = expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = wildcards["out_dir"], folder_name = folder_name, smrt_id = smrt_id) 
-    input2 = expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = wildcards["out_dir"], folder_name = folder_name, smrt_id = smrt_id, out_name = wildcards["out_name"])
-    print(input1, input2)
-    return [input1[0], input2[0]]
-
-def read_align_input(wildcards):
-    folder_name = FOLDER_NAMES[wildcards["out_name"]]
-    smrt_id = SMRT_IDS[wildcards["out_name"]]
-    input1 = expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = wildcards["out_dir"], folder_name = folder_name, smrt_id = smrt_id, out_name = wildcards["out_name"])
-    return input1
-
-wildcard_constraints:
-    shard = "\d+"
+        expand("{out_dir}/{out_name}_ccsLast/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
 
 # Rule to run CCS analysis on the cluster
 rule ccs:
     input:
-        read_ccs_input
+        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
     output:
-        "{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.bam",
+        expand("{out_dir}/{out_name}_ccsLast/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
+        expand("{out_dir}/{out_name}_ccsLast/{out_name}.ccs.report.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
+        expand("{out_dir}/{out_name}_ccsLast/{out_name}.ccs.log", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
     run:
         # check md5check and decide whether go on with the pipeline (if checksum was OK) or stop
-        RUN = open('%s/%s/%s/snakemake_checksum.txt' %(config["OUT_DIR"], folder_name, smrt_id)).readlines()[0].rstrip()
+        #RUN = open('%s/%s/%s/snakemake_checksum.txt' %(config["OUT_DIR"], folder_name, smrt_id)).readlines()[0].rstrip()
+        RUN = 'True'
         if RUN == 'True':
-                shell("{CCS} --min-rq 0.88 --chunk={wildcards.shard} {input} {output}".format(CCS=CCS, input=input[1]))
-
-# Rule to calculate coverage summary
-rule coverage_summary:
-    input:
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    output:
-        expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage_summary.txt", out_dir = config["OUT_DIR"], out_name = out_name)
-    params:
-        pfx_name = expand("{out_name}", out_name = out_name),
-        pfx_main = expand("/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt")
-    shell: """
-        printf "GLOBAL_MEDIAN_READ_LENGTH\tGLOBAL_COVERAGE\tMAPPED_COVERAGE\tMAPPED_READS\tALT_COVERAGE\tALT_READS\tUNMAPPED_COVERAGE\tUNMAPPED_READS\n{params.pfx_name}\t" > {output[0]}
-        {ASBT} cov -g 3088000000 {input[0]} >> {output[0]}
-        tail -1 {output[0]} >> {params.pfx_main}
-        """
-
-# Rule to align the created set of CCS reads back to the subreads
-rule align_ccs_subreads_deepcons:
-    input:
-        "{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.bam",
-        read_align_input
-    output:
-        "{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.aln_subreads.bam"
-    run:
-        shell("{ACTC} -j 40 {input[1]} {input[0]} {output_aln}".format(ACTC=ACTC, out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, input_ccs=input_name, output_aln=output_name))
-
-# Rule to run deepConsensus
-rule deepconsensus_run:
-    input:
-        "{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.aln_subreads.bam",
-        "{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.bam"
-    output:
-        "{out_dir}/{out_name}_deepconsensus/{out_name}.ccs_{shard}.deepConsensus.bam"
-    run:
-        shell("{DEEPCONSENSUS} run --subreads_to_ccs={input_aln} --ccs_bam={input_ccs} --checkpoint={DEEPCONSENSUS_MODEL} --output={out_file}".format(DEEPCONSENSUS=DEEPCONSENSUS, input_aln=input[0], input_ccs=input[1], DEEPCONSENSUS_MODEL=DEEPCONSENSUS_MODEL))
+                shell("{CCS_LAST} --min-rq 0.80 {input} {output} --report-file {out2} --log-file {out3}".format(CCS_LAST=CCS_LAST, input=input, output=output[0], out2=output[1], out3=output[2]))

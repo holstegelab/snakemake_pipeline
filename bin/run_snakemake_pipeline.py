@@ -119,13 +119,23 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20221101_093855 (4 smrt cells)
     # RUN STARTED FOR r64037e_20220822_121303 (3 smrt cells)*
     # RUN STARTED FOR r64037e_20221027_131940 (1 smrt cells)***
-    # RUN STARTED FOR r64346e_20220825_091344 (2 smrt cells)**
+    # RUN STARTED FOR r64346e_20220825_091344 (4 smrt cells)
     # RUN STARTED FOR r64050e_20221108_120220 (3 smrt cells)*
     # RUN STARTED FOR r64367e_20221108_120723 (4 smrt cells)
     # RUN STARTED FOR r64050e_20221115_131805 (3 smrt cells)*
     # RUN STARTED FOR r64367e_20221115_132247 (3 smrt cells)*
+    # RUN STARTED FOR r64050e_20221121_135634 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20221121_143147 (5 smrt cells)
+    # RUN STARTED FOR r64050e_20221128_122837 (3 smrt cells)*
+    # RUN STARTED FOR r64037e_20220829_123419 (2 smrt cells)**
+    # RUN STARTED FOR r64367e_20221129_094857 (1 smrt cells)***
+    # RUN STARTED FOR r64367e_20221202_131637 (2 smrt cells)**
+    # RUN STARTED FOR r64050e_20221205_111011 (3 smrt cells)*
+    # RUN STARTED FOR r64367e_20221205_140936 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20221212_145516 (2 smrt cells)**
+    # RUN STARTED FOR r64367e_20221212_150136 (2 smrt cells)**
     #
-    smrt = smrt_to_run[0]
+    smrt = smrt_to_run[11]
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     print(smrt)
     # create an interactive screen session for the merging script
