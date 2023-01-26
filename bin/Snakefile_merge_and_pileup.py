@@ -27,8 +27,7 @@ CHM13FA='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0.
 MODELDIR="/project/holstegelab/Share/oscar/software/CpG-main/models/pileup_calling_model"
 H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
 CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_hifi.mmi'
-DCACHE_CONFIG='/project/holstegelab/Data/dcache.conf'
-DCACHE_PATH='/home/holstegelab-ntesi/dcache/tape/data_processed/ccs'
+DCACHE_CONFIG='/project/holstegelab/Data/dcache_processed.conf'
 TRASHBIN_PATH='/project/holstegelab/Software/snakemake_pipeline/trashbin'
 
 CACHE=None
@@ -534,9 +533,10 @@ rule rclone_copy:
         for f in files_to_copy:
             # rclone copy
             shell('sleep 10s')
-            shell('rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} {input_file} dcache:tape/data_processed/ccs/{dcache_folder_path}/'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder))
+            shell('rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} {input_file} dcache_processed:ccs/{dcache_folder_path}/'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder))
+            #shell('rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} {input_file} ~/dcache/tape/data_processed/ccs/{dcache_folder_path}/'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder))
             shell('echo {input_file} >> {output_name}'.format(input_file=f, output_name=output))
-            #os.system('rclone copy -vv --progress --multi-thread-streams 1 --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:tape/data_processed/ccs/' + dcache_folder + '/')            
+            #os.system('rclone copy -vv --progress --multi-thread-streams 1 --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:tape/data_processed/ccs/' + dcache_folder + '/')
             #os.system('echo %s >> %s' %(f, out_bam_prefix + '.files_copied.txt'))
 
 # Check if the copy went fine and move the original data
@@ -552,14 +552,14 @@ rule rclone_check_move:
             f = f.rstrip()
             # rclone check
             tmp_check = 'tmp_check_' + str(random.randint(1, 1000000)) + '.txt'
-            #shell('rclone check --config {DCACHE_CONFIG} {input_file} dcache:/tape/data_processed/ccs/{dcache_folder_path}/ --combined {tmp_check_path} --size-only'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder, tmp_check_path=tmp_check))
-            os.system('rclone check --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:/tape/data_processed/ccs/' + dcache_folder + '/ --combined ' + tmp_check + ' --size-only')
+            shell('rclone check --config {DCACHE_CONFIG} {input_file} dcache_processed:ccs/{dcache_folder_path}/ --combined {tmp_check_path} --size-only'.format(input_file=f, DCACHE_CONFIG=DCACHE_CONFIG, dcache_folder_path=dcache_folder, tmp_check_path=tmp_check))
+            #os.system('rclone check --config ' + DCACHE_CONFIG + ' ' + f + ' dcache:/tape/data_processed/ccs/' + dcache_folder + '/ --combined ' + tmp_check + ' --size-only')
             tmp_check_open = open(tmp_check).readlines()[0].split(' ')[0]
             if tmp_check_open == '=':
-            #    shell('rm {tmp_check_file}'.format(tmp_check_file=tmp_check))
-                os.system('rm ' + tmp_check)
-            #    shell('mv {input_file} /project/holstegelab/Software/snakemake_pipeline/trashbin/'.format(input_file=f))
-                os.system('mv ' + f + ' /project/holstegelab/Software/snakemake_pipeline/trashbin/')
+                shell('rm {tmp_check_file}'.format(tmp_check_file=tmp_check))
+            #    os.system('rm ' + tmp_check)
+                shell('mv {input_file} /project/holstegelab/Software/snakemake_pipeline/trashbin/'.format(input_file=f))
+            #    os.system('mv ' + f + ' /project/holstegelab/Software/snakemake_pipeline/trashbin/')
         # at the end, also move the file containing the files to copy
-        #shell('cp {checkfile} /project/holstegelab/Software/snakemake_pipeline/trashbin/'.format(checkfile = input))
-        os.system('cp %s /project/holstegelab/Software/snakemake_pipeline/trashbin/' %(out_bam_prefix + '.files_copied.txt'))
+        shell('cp {checkfile} /project/holstegelab/Software/snakemake_pipeline/trashbin/'.format(checkfile = input))
+        #os.system('cp %s /project/holstegelab/Software/snakemake_pipeline/trashbin/' %(out_bam_prefix + '.files_copied.txt'))

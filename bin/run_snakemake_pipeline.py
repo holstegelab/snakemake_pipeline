@@ -25,28 +25,48 @@ def prepare_config(data_path):
     return config_fname
 
 # Main
-# 1. list all files in dcache
-dcache_data = [x.rstrip() for x in os.popen("find ~/dcache/ -name '*subreads.bam'")]
+# 1. list all files in dcache: both the raw subreads (dcache) and processed files (dcache_processed)
+config_dcache = '/project/holstegelab/Data/dcache.conf'
+config_dcache_processed = '/project/holstegelab/Data/dcache_processed.conf'
+# read files to be processed and parse them
+flist = [x.rstrip() for x in os.popen('rclone ls --config ' + config_dcache + ' dcache:/')]
+flist_subreads_qc1 = [x for x in flist if 'subreads.bam' in x]
+flist_subreads_qc2 = [x for x in flist_subreads_qc1 if '.pbi' not in x]
+flist_subreads_qc3 = [x.split()[-1] for x in flist_subreads_qc2]
 
 # 2. list all processed files
-proces_data = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed -name '*.ccs.log'")]
-proces_data_dcache = [x.rstrip() for x in os.popen("find ~/dcache/tape/data_processed/ccs/ -name '*.ccs.log'")]
-all_proces_data = proces_data + proces_data_dcache
+# ad-centenarians folder on disk
+proces_data_ad_chc = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed/ad_centenarians -name '*.ccs.log'")]
+# nijmegen folder on disk
+proces_data_nijmegen = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed/nijmegen -name '*.ccs.log'")]
+# anke's folder on disk
+proces_data_anke = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed/Anke_samples -name '*.ccs.log'")]
+# other folder on dist
+proces_data_other = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed/other_samples -name '*.ccs.log'")]
+# blood-brain-child folder on disk
+proces_data_bbc = [x.rstrip() for x in os.popen("find /project/holstegelab/Share/pacbio/data_processed/blood_brain_child -name '*.ccs.log'")]
+# processed data on dcache
+proces_data_dcache_qc1 = [x.rstrip() for x in os.popen('rclone ls --config ' + config_dcache_processed + ' dcache_processed:ccs/')]
+proces_data_dcache_qc2 = [x for x in proces_data_dcache_qc1 if 'ccs.log' in x]
+proces_data_dcache_qc3 = [x.split('/')[-1] for x in proces_data_dcache_qc2]
+all_proces_data = proces_data_ad_chc + proces_data_dcache_qc3 + proces_data_anke + proces_data_bbc + proces_data_nijmegen + proces_data_other
 
 # 3. loop through dcache files and see what has been done and what needs to be done
 done = []; to_be_done = []
-for subread in dcache_data:
+for subread in flist_subreads_qc3:
     movie_id = subread.split('/')[-1].replace('.subreads.bam', '')
     if len(list(filter(lambda x:movie_id in x, all_proces_data))) >0:
         done.append([movie_id, subread])
     else:
         to_be_done.append([movie_id, subread])
 
-# 4. gather info for the runs that need to be done
+# 4. gather info for the runs that need to be done -- change from here
 for run in to_be_done:
-    size = os.path.getsize(run[-1])/1e9
-    date = run[0].split('_')[1]
-    run.append(size); run.append(date)
+    # do not grep GenDX runs
+    if 'Gendx' not in run[-1] and 'HLA' not in run[-1] and not run[0].startswith('.'):
+        size = os.path.getsize('/home/holstegelab-ntesi/dcache/' + run[-1])/1e9
+        date = run[0].split('_')[1]
+        run.append(size); run.append(date)
 
 # put data into dataframe
 df = pd.DataFrame(to_be_done, columns = ['movie_id', 'data_path', 'size_gb', 'date'])
@@ -134,8 +154,10 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20221205_140936 (4 smrt cells)
     # RUN STARTED FOR r64050e_20221212_145516 (2 smrt cells)**
     # RUN STARTED FOR r64367e_20221212_150136 (3 smrt cells)*
+    # RUN STARTED FOR r64102e_20220902_123837 (4 smrt cells)
+    # RUN STARTED FOR r64346e_20220902_124909 (2 smrt cells)**
     #
-    smrt = smrt_to_run[]
+    smrt = smrt_to_run[1]
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     print(smrt)
     # create an interactive screen session for the merging script

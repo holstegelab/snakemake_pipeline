@@ -119,7 +119,7 @@ for config in config_files:
         pass
     else:
         counter = counter + 1
-        if counter <10:
+        if counter <15:
             print('XXX submitting sample with config file --> %s' %(config))
             # if the run is new, add it to the file
             fout = open('/project/holstegelab/Software/snakemake_pipeline/config/config_merge/merged_submitted.txt', 'a')
@@ -142,7 +142,7 @@ else:
     fout = open('/project/holstegelab/Software/snakemake_pipeline/config/config_merge/freeze_merged_submitted.txt', 'w')
     header = 'DATE\tSAMPLE\tSMRT_CELLS\tOUTPUT_IN\tSMRT_CELL_N\tCOMBINED_COVERAGE\tDIAGNOSIS\n'
     fout.write(header)
-for config in new_submission:
+for config in new_submission[9::]:
     # get sample id to gather information
     sample_id = config.split('_')[1]
     sample_info = samples_files[sample_id]
@@ -160,6 +160,7 @@ for config in new_submission:
     # add these info to the file
     fout.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' %(date_today, sample_id, ','.join(smrt_cells), out_dir, smrt_cells_n, str(combined_cov).replace('.', ','), diagnosis))
 fout.close()
+# to add: 9362652 -- 9274198
 
 
 
