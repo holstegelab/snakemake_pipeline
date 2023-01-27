@@ -43,11 +43,22 @@ Similar to the first pipeline, the latest development of this pipeline is also a
 5. Run pileup analysis for methylation profiles for GRCh38-aligned (merged) data
 6. Run pileup analysis for methylation profiles for chm13-aligned (merged) data
 7. Run deepvariant analysis on GRCh38-aligned data
+8. Convert merged hifi to fasta format
+9. De-novo assembly using hifi reads and hifiasm (phased output)
+10. De-novo assembly using hifi reads and hifiasm (phases are collapsed)
+11. De-novo assembly using hifi reads and flye
+12. Alignment of de-novo assemblies (hifiasm and flye) to GRCh38
+13. Alignment of de-novo assemblies (hifiasm and flye) to chm13
+14. BUSCO analysis for genome assembly completeness (based on the different assemblies)
+15. Structural variant analysis using pbsv
+16. Structural variant analysis using sniffles
+17. Copy of the single-run data to dcache
+18. Check whether data is correctly copied and move data to trashbin
 
 ## To run the pipeline, use the following commands:
 ### Althought it is adviseable to run the script interactively, the script can be run directly. 
 The script to use is `run_snakemake_merge.py`. This script will open a new screen window with a defined name, and will run the pipeline within that screen window. `python3 run_snakemake_merge.py`
-At the moment, this script will merge only samples for which the combined coverage is >15x.
+At the moment, this script will merge only samples for which the combined coverage is >12x.
 
 ### Main command
 Behind the scenes, the command that is actually use to run the pipeline is contained in `submit_merge_and_pileup.sh`. This bash script takes a single argument as parameter, that is, the configuration file containing the information of the sample to be processed. This bash script calls the actual `snakemake` command that guides the pipeline.
