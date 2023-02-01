@@ -76,7 +76,7 @@ df_filtered = df[df['size_gb'] >= 80]
 
 # 6. then split old runs (before 2022, blood-brain-child project, that were not done from the other AD-chc project)
 to_be_done_datapath = list(df_filtered['data_path'])
-newer_to_do = list(filter(lambda x: re.search(r'2022', x), to_be_done_datapath))
+newer_to_do = list(filter(lambda x: re.search(r'202[23]', x), to_be_done_datapath))
 df_filtered_newer = df_filtered[df_filtered['data_path'].isin(newer_to_do)]
 # also order by date
 df_filtered_newer = df_filtered_newer.sort_values(by=['date'])
@@ -156,8 +156,10 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20221212_150136 (3 smrt cells)*
     # RUN STARTED FOR r64102e_20220902_123837 (4 smrt cells)
     # RUN STARTED FOR r64346e_20220902_124909 (2 smrt cells)**
+    # RUN STARTED FOR r64102e_20221111_142430 (2 smrt cells)**
+    # RUN STARTED FOR r64050e_20230109_142526 (2 smrt cells)**
     #
-    smrt = smrt_to_run[1]
+    smrt = smrt_to_run
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     print(smrt)
     # create an interactive screen session for the merging script
