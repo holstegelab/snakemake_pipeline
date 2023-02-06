@@ -142,7 +142,7 @@ else:
     fout = open('/project/holstegelab/Software/snakemake_pipeline/config/config_merge/freeze_merged_submitted.txt', 'w')
     header = 'DATE\tSAMPLE\tSMRT_CELLS\tOUTPUT_IN\tSMRT_CELL_N\tCOMBINED_COVERAGE\tDIAGNOSIS\n'
     fout.write(header)
-for config in new_submission[9::]:
+for config in new_submission:
     # get sample id to gather information
     sample_id = config.split('_')[1]
     sample_info = samples_files[sample_id]
