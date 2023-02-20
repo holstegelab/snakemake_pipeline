@@ -7,67 +7,105 @@
     library(stringr)
 
 # Main
-# 1. read input coverage stats
+# 1. read input coverage stats and remove duplicates
     cat('## Reading coverage statistics..\n')
     coverage_stats = fread('/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt', h=T, stringsAsFactors=F, sep='\t')
+    coverage_stats = coverage_stats[!duplicated(coverage_stats),]
 
-# 2. read all files from the different projects
-    cat('## Matching sample types and sequencing centers..\n')
-    bbc_project = system("find /project/holstegelab/Share/pacbio/data_processed/blood_brain_child -name 'm*ccs*log'", intern = T)
-    ad_chc_project = system("find /project/holstegelab/Share/pacbio/data_processed/ad_centenarians -name 'm*ccs*log'", intern = T)
-    nijmegen = system("find /project/holstegelab/Share/pacbio/data_processed/nijmegen -name 'm*ccs*log'", intern = T)
-    anke = system("find /project/holstegelab/Share/pacbio/data_processed/Anke_samples -name 'm*ccs*log'", intern = T)
-
-# 3. parse all files and add columns such as project (ad-chc / bbc), sample and source
-    # BBC
-    bbc_project_tmp = data.frame(str_split_fixed(bbc_project, '/', 9), stringsAsFactors = F)
-    bbc_project_tmp$X1 = NULL; bbc_project_tmp$NAME = str_replace_all(bbc_project_tmp$X9, '.ccs.log', '')
-    bbc_project_tmp$source = 'VUMC'; bbc_project_tmp$source[grep('e_', bbc_project_tmp$NAME)] = 'NIJMEGEN'; bbc_project_tmp$source[grep('m64367e', bbc_project_tmp$NAME)] = "VUMC"
-    bbc_project_tmp$source[grep('m64050e', bbc_project_tmp$NAME)] = "VUMC"
-    bbc_project_tmp$date = str_split_fixed(bbc_project_tmp$NAME, '_', 3)[, 2]
-    bbc_df = data.frame(data_path = bbc_project, project = bbc_project_tmp$X7, movie_id = bbc_project_tmp$NAME, sample_id = bbc_project_tmp$X8, source = bbc_project_tmp$source, date = bbc_project_tmp$date)
-    # AD-CHC
-    ad_chc_project_tmp = data.frame(str_split_fixed(ad_chc_project, '/', 8), stringsAsFactors = F)
-    ad_chc_project_tmp$X1 = NULL; ad_chc_project_tmp$NAME = str_replace_all(ad_chc_project_tmp$X8, '.ccs.log', '')
-    ad_chc_project_tmp$source = 'VUMC'; ad_chc_project_tmp$source[grep('e_', ad_chc_project_tmp$NAME)] = 'NIJMEGEN'; ad_chc_project_tmp$source[grep('m64367e', ad_chc_project_tmp$NAME)] = "VUMC"
-    ad_chc_project_tmp$source[grep('m64050e', ad_chc_project_tmp$NAME)] = "VUMC"
-    ad_chc_project_tmp$date = str_split_fixed(ad_chc_project_tmp$NAME, '_', 3)[, 2]
-    ad_chc_df = data.frame(data_path = ad_chc_project, project = ad_chc_project_tmp$X7, movie_id = ad_chc_project_tmp$NAME, sample_id = rep(NA, nrow(ad_chc_project_tmp)), source = ad_chc_project_tmp$source, date = ad_chc_project_tmp$date)
-    # NIJMEGEN
-    nijmegen_tmp = data.frame(str_split_fixed(nijmegen, '/', 8), stringsAsFactors = F)
-    nijmegen_tmp$X1 = NULL; nijmegen_tmp$NAME = str_replace_all(nijmegen_tmp$X8, '.ccs.log', '')
-    nijmegen_tmp$source = 'VUMC'; nijmegen_tmp$source[grep('e_', nijmegen_tmp$NAME)] = 'NIJMEGEN'; nijmegen_tmp$source[grep('m64367e', nijmegen_tmp$NAME)] = "VUMC"; nijmegen_tmp$source[grep('m64050e', nijmegen_tmp$NAME)] = "VUMC"
-    nijmegen_tmp$date = str_split_fixed(nijmegen_tmp$NAME, '_', 3)[, 2]
-    nijmegen_df = data.frame(data_path = nijmegen, project = rep('ad_centenarians', nrow(nijmegen_tmp)), movie_id = nijmegen_tmp$NAME, sample_id = rep(NA, nrow(nijmegen_tmp)), source = nijmegen_tmp$source, date = nijmegen_tmp$date)
-    # ANKE
-    anke_tmp = data.frame(str_split_fixed(anke, '/', 8), stringsAsFactors = F)
-    anke_tmp$X1 = NULL; anke_tmp$NAME = str_replace_all(anke_tmp$X8, '.ccs.log', '')
-    anke_tmp$source = 'VUMC'; anke_tmp$source[grep('e_', anke_tmp$NAME)] = 'NIJMEGEN'; anke_tmp$source[grep('m64367e', anke_tmp$NAME)] = "VUMC"
-    anke_tmp$source[grep('m64050e', anke_tmp$NAME)] = "VUMC"
-    anke_tmp$date = str_split_fixed(anke_tmp$NAME, '_', 3)[, 2]
-    anke_df = data.frame(data_path = anke, project = rep('anke_brain_bank', nrow(anke_tmp)), movie_id = anke_tmp$NAME, sample_id = rep(NA, nrow(anke_tmp)), source = anke_tmp$source, date = anke_tmp$date)
-
-# 4. then add the coverage information
-    all_runs = rbind(bbc_df, ad_chc_df, nijmegen_df, anke_df)
-    all_runs_info = merge(all_runs, coverage_stats, by.x = 'movie_id', by.y = 'MOVIE_ID', all.x = T)
-
-# 5. finally we need to add the actual sample match
-    add_info = list()
-    for (i in 1:nrow(all_runs_info)){
-        # read sample match
-        file_path = str_replace_all(all_runs_info$data_path[i], '.log', '.primrose.hifi.sample.txt')
-        if (file.exists(file_path)){
-            sample_info = fread(file_path, h=T, stringsAsFactors=F, sep="\t")
-            tmp_info = sample_info[1, c('ID_GWAS', 'PERC_HOMOLOGY', 'SNPS_N', 'original_ID', 'ID_100plus', 'Study', 'diagnosis', 'sex', 'age')]
-        } else {
-            tmp_info = data.frame('ID_GWAS' = NA, 'PERC_HOMOLOGY' = NA, 'SNPS_N' = NA, 'original_ID' = NA, 'ID_100plus' = NA, 'Study' = NA, 'diagnosis' = NA, 'sex' = NA, 'age' = NA)
+# 2. not that we are moving processed data to dcache, we need to adopt a different strategy -- probably good to store all sample-check files somewhere
+    # list all sample-check-files in dcache
+    dcache_config = '/project/holstegelab/Data/dcache_processed.conf'
+    all_files_processed_dcache1 = system(paste0("rclone ls --config ", dcache_config, " dcache_processed:ccs/ad_centenarians/"), intern = T)
+    all_files_processed_dcache2 = system(paste0("rclone ls --config ", dcache_config, " dcache_processed:ccs/blood_brain_child/"), intern = T)
+    all_files_processed_dcache3 = system(paste0("rclone ls --config ", dcache_config, " dcache_processed:ccs/other/"), intern = T)
+    all_files_processed_dcache = c(all_files_processed_dcache1, all_files_processed_dcache2, all_files_processed_dcache3)
+    for (i in 1:length(all_files_processed_dcache)){
+        tmp = strsplit(all_files_processed_dcache[i], ' ')[[1]][length(strsplit(all_files_processed_dcache[i], ' ')[[1]])]
+        if (length(grep('sample', tmp)) >0){
+            system(paste0('rclone copy -vv --progress --multi-thread-streams 1 --config ', dcache_config, ' dcache_processed:ccs/ad_centenarians/', tmp, ' /project/holstegelab/Share/pacbio/data_processed/sample_checks/'))
         }
-        add_info[[(length(add_info) + 1)]] = tmp_info
     }
-    add_info = rbindlist(add_info)
-    # and add these information to the main dataframe
-    all_runs_info = cbind(all_runs_info, add_info)
+    # then there are also some data on disk
+    files_disk_p1 = system('ls /project/holstegelab/Share/pacbio/data_processed/ad_centenarians/*sample*', intern = T)
+    files_disk_p2 = system('ls /project/holstegelab/Share/pacbio/data_processed/nijmegen/*sample*', intern = T)
+    files_disk_p3 = system('ls /project/holstegelab/Share/pacbio/data_processed/other_samples/*sample*', intern = T)
+    files_disk_p4 = system('ls /project/holstegelab/Share/pacbio/data_processed/Anke_samples/*sample*', intern = T)
+    files_disk_p5 = system('find /project/holstegelab/Share/pacbio/data_processed/blood_brain_child/ -name "*sample*"', intern = T)
+    all_files_disk = c(files_disk_p1, files_disk_p2, files_disk_p3, files_disk_p4, files_disk_p5)
+    for (f in all_files_disk){ system(paste0('cp ', f, ' /project/holstegelab/Share/pacbio/data_processed/sample_checks/')) }
+
+# 3. Open all sample match files that we will merge with the coverage data
+    data_path = '/project/holstegelab/Share/pacbio/data_processed/sample_checks/'
+    all_sample_checks = system(paste0('ls ', data_path), intern=T)
+    all_checks_df = data.frame()
+    for (f in all_sample_checks){
+        # open file
+        tmp = fread(paste0(data_path, f), h=T, stringsAsFactors=F)
+        # sort by percentage of identity
+        tmp = tmp[order(tmp$PERC_HOMOLOGY),]
+        # take percentage higher than 95%
+        likely_match = tmp[which(as.numeric(tmp$PERC_HOMOLOGY) >= 0.94),]
+        # extract smrt id of the run
+        smrt_id = str_replace_all(f, '.ccs.primrose.hifi.sample.txt', '')
+        # check if there are no hits, and if there are more than 1 hit
+        if (nrow(likely_match) == 0){
+            print(paste0('!!! no hits for ', f, ': likely coverage is too low or the sample is unknown. Now trying to figure it out.'))
+            # check what samples this was
+            if (smrt_id %in% c('m64367e_221121_144411')){
+                # Annamieke's brain
+                print('#### This sample was Annamiekes brain sample')
+                likely_match = tmp[1, ]
+                likely_match[1, ] = NA
+                likely_match$original_ID = 'Annamieks_sample'
+            } else if (smrt_id %in% c('m64050_220124_203838', 'm64050_220123_094203', 'm64050_220225_130031', 'm64050_220226_235525', 'm64050_220228_090930', 'm64367e_220516_075357')){
+                # Anke's brain
+                print('#### This sample was Ankes brain sample')
+                likely_match = tmp[1, ]
+                likely_match[1, ] = NA
+                likely_match$original_ID = 'Anke_sample'
+            } else if (smrt_id %in% c('m64367e_220729_122853', 'm64050e_220729_122556', 'm64367e_220812_122636', 'm64050e_220812_122354')){
+                # HG002
+                print('#### This sample was HG002')
+                likely_match = tmp[1, ]
+                likely_match[1, ] = NA
+                likely_match$original_ID = 'HG002'
+            } else {
+                # otherwise likely low coverage
+                print('#### This sample was likely low coverage')
+                likely_match = tmp[1, ]
+                likely_match[1, ] = NA
+            }
+        } else if (nrow(likely_match) >1){
+            print(paste0('!!! too many hits for ', f))
+            # most times there's a duplication
+            if (length(unique(likely_match$ID_100plus) == 1) || length(unique(likely_match$I_ID) == 1)){
+                likely_match = likely_match[1, ]
+                print('#### This was a duplicated sample.')
+            }
+        }
+        likely_match$SMRT_ID = smrt_id
+        all_checks_df = rbind(all_checks_df, likely_match)
+    }
+
+# 4. now we merge with coverage stats
+    table(all_checks_df$SMRT_ID %in% coverage_stats$MOVIE_ID)
+    all_check_df_coverage = merge(all_checks_df, coverage_stats, by.x = 'SMRT_ID', by.y = 'MOVIE_ID')
+
+# 5. add project information and sequencing center
+    all_check_df_coverage$SEQUENCING_CENTER = NA
+    all_check_df_coverage$SEQUENCING_CENTER[grep('m64050', all_check_df_coverage$SMRT_ID)] = 'Amsterdam_Stitch'
+    all_check_df_coverage$SEQUENCING_CENTER[grep('m64367', all_check_df_coverage$SMRT_ID)] = 'Amsterdam_Lilo'
+    all_check_df_coverage$SEQUENCING_CENTER[is.na(all_check_df_coverage$SEQUENCING_CENTER)] = 'Radboud'
+    # blood_brain_child project
+    overview_genetics = fread('/project/holstegelab/Software/snakemake_pipeline/sample_check_data/20210615_overview_genetics.txt', h=T)
+    bbc_project = overview_genetics[which(overview_genetics$PACBIO_SOMATIC == 'YES'),]
+    all_check_df_coverage$PROJECT = ifelse(all_check_df_coverage$ID_GWAS %in% bbc_project$ID_GWAS, 'Blood_Brain_Child', NA)
+    all_check_df_coverage$PROJECT[is.na(all_check_df_coverage$PROJECT)] = 'AD_Centenarians'
+    all_check_df_coverage$PROJECT[which(all_check_df_coverage$diagnosis %in% c('Dementie_anders', 'NIID'))] = 'Other'
+    all_check_df_coverage$PROJECT[is.na(all_check_df_coverage$diagnosis)] = 'Other'
+
 # 6. save information
     cat('## Writing new freeze data..\n')
+    all_check_df_coverage$PERC_HOMOLOGY = as.numeric(all_check_df_coverage$PERC_HOMOLOGY)
     outname = paste0('/project/holstegelab/Share/pacbio/data_processed/coverage_freezes/', Sys.Date(), '_freeze_sequencing_stats.txt')
-    write.table(all_runs_info, outname, quote=F, row.names=F, sep = "\t", dec = ',')
+    write.table(all_check_df_coverage, outname, quote=F, row.names=F, sep = "\t", dec = ',')
