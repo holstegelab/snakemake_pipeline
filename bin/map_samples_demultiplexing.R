@@ -7,11 +7,11 @@
     library(ggpubr)
 
 # input data
-    sample_pos = fread('/project/holstegelab/Share/pacbio/data_processed/HLA_project/standard_pipeline/demultiplex_plate3/assign_samples/sample_positions_plate4.txt', h=T, stringsAsFactors=F)
-    barcod_pos = fread('/project/holstegelab/Share/pacbio/data_processed/HLA_project/standard_pipeline/demultiplex_plate3/assign_samples/barcode_positions.txt', h=F, stringsAsFactors=F)
-    counts_info = fread('/project/holstegelab/Share/pacbio/data_processed/HLA_project/standard_pipeline/demultiplex_plate3/m64346e_221010_124738.ccs.primrose.hifi.demultiplexed.lima.counts', h=T, stringsAsFactors=F)
+    sample_pos = fread('/project/holstegelab/Share/pacbio/data_processed/HLA_project/samples_plate/sample_positions_plate4.txt', h=T, stringsAsFactors=F)
+    barcod_pos = fread('/project/holstegelab/Share/pacbio/data_processed/HLA_project/barcodes_sets/barcode_positions.txt', h=F, stringsAsFactors=F)
+    counts_info = fread('/project/holstegelab/Share/pacbio/data_processed/HLA_project/r64346e_20221010_123601_defaultCCS/m64346e_221010_124738.ccs.demultiplexed.lima.counts', h=T, stringsAsFactors=F)
 
-# main
+# Main
 # assign column names and rownames to barcode_pos
     rownames(barcod_pos) = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H')
     colnames(barcod_pos) = as.character(seq(1, 12))
@@ -31,7 +31,15 @@
 # also add counts
     table(samples_mapped$barcode %in% counts_info$IdxFirstNamed)            # H10, 11 and 12 are missing
     samples_mapped_with_counts = merge(samples_mapped, counts_info, by.x = 'barcode', by.y = 'IdxCombinedNamed', all.x = T)
-    write.table(samples_mapped_with_counts, '/project/holstegelab/Share/pacbio/data_processed/HLA_project/standard_pipeline/demultiplex_plate3/assign_samples/mapping_samples_plate.txt', quote=F, row.names=F, col.names=F, sep = "\t")
+# GWAS ID is missing for some samples -- add it
+    load('/project/holstegelab/Share/gwas_array/mapping_files/phenotypes_20211027_All.Rdata')
+    for (i in 1:nrow(samples_mapped_with_counts)){
+        if (is.na(samples_mapped_with_counts$ID_GWAS[i])){
+            samples_mapped_with_counts$ID_GWAS[i] = pheno_final_raw$ID_GWAS[which(pheno_final_raw$I_ID == samples_mapped_with_counts$I_ID[i])]
+        }
+    }
+# write the final list of mapped samples
+    write.table(samples_mapped_with_counts, '/project/holstegelab/Share/pacbio/data_processed/HLA_project/r64346e_20221010_123601_defaultCCS/mapping_samples/mapping_samples_plate.txt', quote=F, row.names=F, col.names=F, sep = "\t")
 # plots
     p0 = ggplot(samples_mapped_with_counts, aes(x = Slot, y = Counts, fill = gender)) + geom_bar(stat = 'identity') + facet_grid(cols = vars(pheno), scale = 'free') + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
     p1 = ggplot(samples_mapped_with_counts, aes(x = MeanScore, y = Counts, color = pheno)) + geom_jitter(size = 6, alpha = 0.7, width = 0.25)

@@ -44,9 +44,12 @@ def checkSum(path, MD5):
         md5_file = []
         with open(path + "/" + md5[0]) as inpmd5:
             for line in inpmd5:
-                line = line.rstrip().split()
-                sumNumb, filename = line[0], line[1].split("/")[-1]
-                md5_file.append([sumNumb, filename])
+                if line.startswith('export') or 'md5' in line:
+                    pass
+                else:
+                    line = line.rstrip().split()
+                    sumNumb, filename = line[0], line[1].split("/")[-1]
+                    md5_file.append([sumNumb, filename])
         # write new output with full paths
         outf = open((path + "/" + "md5checksum.md5"), "w")
         for x in md5_file:

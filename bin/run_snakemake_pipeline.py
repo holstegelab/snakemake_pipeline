@@ -152,7 +152,7 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20221202_131637 (2 smrt cells)**
     # RUN STARTED FOR r64050e_20221205_111011 (3 smrt cells)*
     # RUN STARTED FOR r64367e_20221205_140936 (4 smrt cells)
-    # RUN STARTED FOR r64050e_20221212_145516 (2 smrt cells)**
+    # RUN STARTED FOR r64050e_20221212_145516 (3 smrt cells)*
     # RUN STARTED FOR r64367e_20221212_150136 (3 smrt cells)*
     # RUN STARTED FOR r64102e_20220902_123837 (4 smrt cells)
     # RUN STARTED FOR r64346e_20220902_124909 (2 smrt cells)**
@@ -160,10 +160,32 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64050e_20230109_142526 (4 smrt cells)
     # RUN STARTED FOR r64346e_20220907_132300 (1 smrt cells)***
     # RUN STARTED FOR r64050e_20230130_132350 (4 smrt cells)
-    # RUN STARTED FOR r64037e_20220906_083239 (1 smrt cells)***
-    # RUN STARTED FOR r64367e_20230206_135236 (3 smrt cells)*
-    #
-    smrt = smrt_to_run[4]
+    # RUN STARTED FOR r64037e_20220906_083239 (2 smrt cells)**
+    # RUN STARTED FOR r64367e_20230206_135236 (4 smrt cells)
+    # RUN STARTED FOR r64167e_20220907_133156 (4 smrt cells)
+    # RUN STARTED FOR r64037e_20220929_082247 (3 smrt cells)*
+    # RUN STARTED FOR r64050e_20221219_120452 (3 smrt cells)*
+    # RUN STARTED FOR r64367e_20230123_144644 (4 smrt cells)
+    # RUN STARTED FOR r64037e_20220919_103932 (4 smrt cells)
+    # RUN STARTED FOR r64167e_20220919_105929 (4 smrt cells)
+    # RUN STARTED FOR r64347e_20220930_105833 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20230221_112935 (4 smrt cells)
+    # RUN STARTED FOR r64346e_20220930_105730 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20230306_121710 (4 smrt cells)
+    # RUN STARTED FOR r64167e_20221014_122045 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20230103_133345 (3 smrt cells)*
+    # RUN STARTED FOR r64367e_20230109_143252 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20230116_131445 (1 smrt cells)***
+    # RUN STARTED FOR r64367e_20230214_133248 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20230214_132436 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20230221_123319 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20230308_135456 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20230314_124647 (4 smrt cells)
+    # RUN STARTED FOR r64367e_20230314_125931 (4 smrt cells)
+    # RUN STARTED FOR r64050e_20230321_141438 (2 smrt cells)**
+    # RUN STARTED FOR r64367e_20230321_142350 (1 smrt cells)***
+
+    smrt = smrt_to_run[41]
     print('XXX submitting sample with config file --> %s' %(smrt[0]))
     print(smrt)
     # create an interactive screen session for the merging script

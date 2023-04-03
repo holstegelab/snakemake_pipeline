@@ -4,7 +4,7 @@
 # 2. DATA SHOULD ALSO BE PROCESSED
 
 # path to data from KG to be removed (this should be a list of runs)
-kg_path = 'smrt_cells_to_be_remove_KG_20230208.txt'
+kg_path = 'smrt_cells_to_be_remove_KG_20230320.txt'
 kg = read.table(kg_path, h=F, stringsAsFactors=F)
 
 # for each file, check if a link exists in dcache
@@ -62,5 +62,8 @@ summary_runs = merge(run_stat, yield_missing, by.x = 'kg_id', by.y = 'smrt_kg')
 # all good: low quality smrt cells have not been processed, rest is ok
 # everything is correctly on dcache
 #########################################################
-
+# update of 2023-03-20
+# of 13 SMRT cells, all of them are on dcache
+# 8 were processed and data is ready
+# 5 were not processed as the subreads.bam was basically empty. Check with Bilgehan whether this was an issue like in the past.
 
