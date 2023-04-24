@@ -2,129 +2,161 @@ __default__:
   ntasks: 1
   ncpupertask: 1
   mem: 5M
+  time: 1440
 
 merge_hifi_hg38:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 index_hifi_hg38:
   ntasks: 1
   ncpupertask: 4
+  time: 1440
 
 merge_nonhifi_hg38:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 index_nonhifi_hg38:
   ntasks: 1
   ncpupertask: 4
+  time: 1440
 
 merge_hifi_chm13:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 index_hifi_chm13:
   ntasks: 1
   ncpupertask: 4
+  time: 1440
 
 merge_nonhifi_chm13:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 index_nonhifi_chm13:
   ntasks: 1
   ncpupertask: 4
+  time: 1440
 
 pileup_analysis_hg38:
   ntasks: 1
   ncpupertask: 50
+  time: 2880
 
 pileup_analysis_chm13:
   ntasks: 1
   ncpupertask: 50
+  time: 2880
 
 deepvariant_hg38:
   ntasks: 1
   ncpupertask: 60
+  time: 4320
 
 deepvariant_chm13:
   ntasks: 1
   ncpupertask: 60
+  time: 4320
 
 bam2fasta:
   ntasks: 1
   ncpupertask: 10
+  time: 1440
 
 hifiasm_phased:
   ntasks: 1
   ncpupertask: 40
+  time: 1440
 
 hifiasm_primary:
   ntasks: 1
   ncpupertask: 40
+  time: 1440
 
 gfa2fasta:
   ntasks: 1
   ncpupertask: 1
+  time: 1440
 
 align_hifiasm_hg38_haps:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 align_hifiasm_hg38_primary:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 align_hifiasm_hg38_alternate:
   ntasks: 1
   ncpupertask: 20
   mem: 250G
+  time: 1440
 
 align_hifiasm_chm13_alternate:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 align_hifiasm_chm13_primary:
   ntasks: 1
   ncpupertask: 20
   mem: 250G
+  time: 1440
 
 align_hifiasm_chm13_haps:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 busco_analysis:
   ntasks: 1
   ncpupertask: 20
+  time: 4320
 
 flye_assembly:
   ntasks: 1
   ncpupertask: 40
+  time: 1440
 
 align_flye_hg38:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 align_flye_chm13:
   ntasks: 1
   ncpupertask: 20
+  time: 1440
 
 busco_flye:
   ntasks: 1
   ncpupertask: 20
+  time: 4320
 
 sv_discover_pbsv_reads:
   ntasks: 1
   ncpupertask: 2
+  time: 1440
 
 sv_call_pbsv_reads:
   ntasks: 1
   ncpupertask: 10
+  time: 1440
 
 sv_call_sniffles_reads:
   ntasks: 1
   ncpupertask: 10
+  time: 1440
 
 convertSAM_BAM:
   ntasks: 1
   ncpupertask: 4
+  time: 1440

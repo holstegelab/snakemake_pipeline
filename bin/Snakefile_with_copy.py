@@ -134,7 +134,7 @@ rule all:
         expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons.bam", out_dir = config["OUT_DIR"], out_name = out_name)
         #expand("{out_dir}/{out_name}.ccs.deepConsensus.bam", out_dir = config["OUT_DIR"], out_name = out_name)
 
-# Rule to copy data from dcache
+# Rule to copy data from dcache: steps are stage, download, unstage
 rule dcache_copy:
     output:
         expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
@@ -142,7 +142,10 @@ rule dcache_copy:
         inp = expand("%s" %(dcache_path)),
         pfx = expand("{out_dir}/{folder_name}/{smrt_id}", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id)
     shell: """
+        ada --tokenfile {DCACHE_CONFIG} --stage {params.inp}
+        sleep 7200
         rclone copy -vv --progress --multi-thread-streams 1 --config {DCACHE_CONFIG} dcache:{params.inp}/ {params.pfx}/
+        ada --tokenfile {DCACHE_CONFIG} --unstage {params.inp}
         """
 
 # Rule to perform md5 sum check if this is available
