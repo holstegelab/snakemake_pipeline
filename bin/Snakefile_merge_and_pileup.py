@@ -39,7 +39,8 @@ sample_type = out_bam_prefix.split('/')[-2]
 dcache_folder = ""
 if sample_type in ['ad', 'centenarian']:
     dcache_folder = 'ad_centenarians'
-
+else:
+    dcache_folder = 'other'
 print("## Input files prefix --> %s" %(inp_bam_prefix))
 print("## Output files prefix --> %s" %(out_bam_prefix))
 
@@ -212,7 +213,7 @@ rule index_nonhifi_chm13:
 rule pileup_analysis_chm13:
     input:
         expand("{out_prefix}.merged.hifi.chm13.bam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix)        
+        expand("{out_prefix}.merged.hifi.chm13.bam.bai", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.met.chm13.combined.denovo.bed", out_prefix = out_bam_prefix)
     params:
@@ -313,7 +314,7 @@ rule busco_flye:
     shell: """
         {BUSCO} -f -i {input[0]} -o {params.pfx} -m genome -c 20 --out_path {params.pfx_path}
         """
-        
+
 # Rule to convert GFA to fasta for alignment (haplotypes, primary, alternate)
 rule gfa2fasta:
     input:
@@ -411,7 +412,7 @@ rule convertSAM_BAM:
         expand("{out_prefix}.hifi.hifiasm.p_ctg_chm13.sam", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.a_ctg_chm13.sam", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.flye/assembly_hg38.sam", out_prefix = out_bam_prefix),
-        expand("{out_prefix}.hifi.flye/assembly_chm13.sam", out_prefix = out_bam_prefix)  
+        expand("{out_prefix}.hifi.flye/assembly_chm13.sam", out_prefix = out_bam_prefix)
     output:
         expand("{out_prefix}.hifi.hifiasm.bp.hap1.p_ctg_hg38.bam", out_prefix = out_bam_prefix),
         expand("{out_prefix}.hifi.hifiasm.bp.hap2.p_ctg_hg38.bam", out_prefix = out_bam_prefix),

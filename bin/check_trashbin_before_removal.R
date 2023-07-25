@@ -16,6 +16,7 @@ trashbin = system('ls /project/holstegelab/Software/snakemake_pipeline/trashbin/
 # these files are not in dcache and therefore should not be checked
 trashbin = trashbin[which(trashbin != 'files_with_issues.txt')]
 trashbin = trashbin[which(trashbin != 'rclone_checks.txt')]
+trashbin = trashbin[-grep('copied', trashbin)]
 # set the path to the configuration file
 dcache_config = '/project/holstegelab/Data/dcache_processed.conf'
 
@@ -30,8 +31,10 @@ for (f in trashbin){
     if (rclone_check$V2 == f & rclone_check$V1 == "="){
         # we can remove the file here
         system(paste0('rm ', f))
+        system(paste0('rm rclone_checks.txt'))
     } else {
         system(paste0('echo "', f, '" >> files_with_issues.txt'))
+        system(paste0('rm rclone_checks.txt'))
     }
 }
 

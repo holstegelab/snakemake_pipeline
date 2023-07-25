@@ -89,12 +89,29 @@ for smrt in smrt_to_run:
     config_fname = prepare_config(smrt[1])
     smrt.append(config_fname)
 
-# 9. finally submit the snakemake pipeline (bash script, 1 argument which is the configuration file)
+# 9. to make sure we don't run things twice, let's read also the currently running screen processes
+all_screen = [x.rstrip().split('\t') for x in list(os.popen('screen -ls'))]
+all_screen = [x[1].split('.')[1] for x in all_screen if len(x) >1]
+
+# 10. finally submit the snakemake pipeline (bash script, 1 argument which is the configuration file)
 #for smrt in smrt_to_run:
-    #
-    # !!!!! BE CAREFUL WITH RUNNING THIS FOR LOOP!! BETTER TO DO IT 1 BY 1 TO NOT MESS THINGS UP
-    # !!!!! THE PROBLEM IS THAT IF SOME DATA IS BEIGN COPIED TO DCACHE, IT SHOULD NOT BE PROCESSED
-    #
+    smrt = smrt_to_run[9]
+    print('XXX submitting sample with config file --> %s' %(smrt[0]))
+    # create an interactive screen session for the merging script
+    screen_name = smrt[-1].split('/')[-1].replace('.yml', '').replace('config_', '')
+    if screen_name not in all_screen:
+        print(screen_name)
+        os.system("screen -dmS '%s' /bin/bash -i" %(screen_name))
+        # then run in this screen session to load the right conda environment
+        os.system("screen -S '%s' -X stuff 'conda activate py37^M'" %(screen_name))
+        # then run command to go to the right directory
+        os.system("screen -S '%s' -X stuff 'cd /project/holstegelab/Software/snakemake_pipeline/slurms_outputs^M'" %(screen_name))
+        # finally run the actual snakemake script
+        os.system("screen -S '%s' -X stuff 'sh /project/holstegelab/Software/snakemake_pipeline/bin/submit_copy_and_pipeline.sh %s^M'" %(screen_name, smrt[-1]))
+    else:
+        pass
+
+# LOGS (OLD)
     # RUN STARTED FOR r64050_20220422_120813 AND r64050e_20220527_133058 [0, 1, 2, 3, 4 of smrt_to_run
     # RUN STARTED FOR r64050e_20220603_134449 (all 4 smrt cells)
     # RUN STARTED FOR r64367e_20220603_134547 (all 4 smrt cells)
@@ -184,16 +201,3 @@ for smrt in smrt_to_run:
     # RUN STARTED FOR r64367e_20230314_125931 (4 smrt cells)
     # RUN STARTED FOR r64050e_20230321_141438 (2 smrt cells)**
     # RUN STARTED FOR r64367e_20230321_142350 (1 smrt cells)***
-
-    smrt = smrt_to_run[41]
-    print('XXX submitting sample with config file --> %s' %(smrt[0]))
-    print(smrt)
-    # create an interactive screen session for the merging script
-    screen_name = smrt[-1].split('/')[-1].replace('.yml', '').replace('config_', '')
-    os.system("screen -dmS '%s' /bin/bash -i" %(screen_name))
-    # then run in this screen session to load the right conda environment
-    os.system("screen -S '%s' -X stuff 'conda activate py37^M'" %(screen_name))
-    # then run command to go to the right directory
-    os.system("screen -S '%s' -X stuff 'cd /project/holstegelab/Software/snakemake_pipeline/slurms_outputs^M'" %(screen_name))
-    # finally run the actual snakemake script
-    os.system("screen -S '%s' -X stuff 'sh /project/holstegelab/Software/snakemake_pipeline/bin/submit_copy_and_pipeline.sh %s^M'" %(screen_name, smrt[-1]))

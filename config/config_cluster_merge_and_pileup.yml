@@ -57,7 +57,7 @@ pileup_analysis_chm13:
 deepvariant_hg38:
   ntasks: 1
   ncpupertask: 60
-  time: 4320
+  time: 5760
 
 deepvariant_chm13:
   ntasks: 1
@@ -72,12 +72,12 @@ bam2fasta:
 hifiasm_phased:
   ntasks: 1
   ncpupertask: 40
-  time: 1440
+  time: 2880
 
 hifiasm_primary:
   ntasks: 1
   ncpupertask: 40
-  time: 1440
+  time: 2880
 
 gfa2fasta:
   ntasks: 1
@@ -119,12 +119,12 @@ align_hifiasm_chm13_haps:
 busco_analysis:
   ntasks: 1
   ncpupertask: 20
-  time: 4320
+  time: 5760
 
 flye_assembly:
   ntasks: 1
   ncpupertask: 40
-  time: 1440
+  time: 2880
 
 align_flye_hg38:
   ntasks: 1
@@ -139,7 +139,7 @@ align_flye_chm13:
 busco_flye:
   ntasks: 1
   ncpupertask: 20
-  time: 4320
+  time: 5760
 
 sv_discover_pbsv_reads:
   ntasks: 1

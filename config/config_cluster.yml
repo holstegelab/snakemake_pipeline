@@ -22,7 +22,7 @@ align_nonccs:
 sample_check:
   ntasks: 1
   ncpupertask: 12
-  time: 1440
+  time: 2200
 
 primrose:
   ntasks: 1

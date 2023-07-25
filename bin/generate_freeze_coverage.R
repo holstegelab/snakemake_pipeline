@@ -12,7 +12,7 @@
     coverage_stats = fread('/project/holstegelab/Share/pacbio/data_processed/coverage_smrt_cells.txt', h=T, stringsAsFactors=F, sep='\t')
     coverage_stats = coverage_stats[!duplicated(coverage_stats),]
 
-# 2. not that we are moving processed data to dcache, we need to adopt a different strategy -- probably good to store all sample-check files somewhere
+# 2. now that we are moving processed data to dcache, we need to adopt a different strategy -- probably good to store all sample-check files somewhere
     # list all sample-check-files in dcache
     dcache_config = '/project/holstegelab/Data/dcache_processed.conf'
     all_files_processed_dcache1 = system(paste0("rclone ls --config ", dcache_config, " dcache_processed:ccs/ad_centenarians/"), intern = T)
