@@ -138,7 +138,7 @@ genotypes = pd.read_csv(MAIN + "dosages_random_set_snps_all_samples.raw.gz", sep
 
 # 3. extract SNPs from pacbio
 snps_to_serch = snps_info['id']
-with Pool(4) as p:
+with Pool(8) as p:
     pacbio_snps = p.map(extractPacbioSNPs, snps_to_serch)
 
 # 4. clean pacbio snps -- use also coverage
@@ -167,7 +167,7 @@ for snp in pacbio_snps_hq:
 # subset genotype file
 genotypes_matches = genotypes[matches]
 all_samples = list(range(0, genotypes_matches.shape[0]))
-with Pool(4) as p:
+with Pool(8) as p:
     res_check = p.map(comparePacbioArray, all_samples)
 res_check_df = pd.DataFrame.from_records(res_check)
 res_check_df.columns = ['ID_GWAS', 'PERC_HOMOLOGY', 'SNPS_N']
@@ -177,3 +177,4 @@ res_check_df['ID_GWAS'] = res_check_df['ID_GWAS'].apply(str)
 final_res = pd.merge(res_check_df, phenotypes, on = 'ID_GWAS')
 final_res.sort_values(by = ['PERC_HOMOLOGY'], ascending = False, inplace = True)
 final_res.to_csv(output_file, sep = "\t", header = True, index = False, na_rep='NA')
+

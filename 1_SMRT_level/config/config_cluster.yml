@@ -21,7 +21,7 @@ align_nonccs:
 
 sample_check:
   ntasks: 1
-  ncpupertask: 12
+  ncpupertask: 8
   time: 2200
 
 primrose:
@@ -71,7 +71,7 @@ deepconsensus_run:
 
 demultiplexing:
   ntasks: 1
-  ncpupertask: 10
+  ncpupertask: 6
   time: 1440
 
 read_length_distr:

@@ -1,0 +1,19 @@
+THIS FOLDER CONTAINS THE MAIN FILES FOR RUNNING THE SECOND STEP OF THE PIPELINE, AT THE SAMPLE LEVEL
+
+THIS FOLDER CONTAINS:
+- config_cluster_sample.yml: configuration file for the cluster, reporting resources to use for each operation
+- config_file_example.yml: example configuration file for an actual run. In this file you need to specify the list of single smrt cells to combine and the output directory.
+- cpg.yml: conda environment based on python3.7
+- snakemake_sample.py: main snakemake file
+
+NB: the conda environments contain (slightly) outdated softwares, as we kept the same software versions during all our sequencing project, which lasted 3 years. No major changes should have happened in the latest software versions, but in case you want to use the latest versions, you need to download them separately. 
+Also, the conda environments are likely redundant.
+
+******
+In order to run the snakemake pipeline, the command is the following:
+snakemake -s [path/to/snakemake_sample.py] --latency-wait 60 --configfile [path/to/config_example_sample.yml] --cluster "sbatch --ntasks {cluster.ntasks} -c {cluster.ncpupertask} --time {cluster.time}" --cluster-config [path/to/config_cluster_sample.yml] --jobs 1
+******
+
+YOU WILL NEED TO ADJUST PATHS TO THE SOFTWARES TO THOSE PRESENT IN YOUR MACHINE. ADDITIONAL INFORMATION IS AVAILABLE BY EMAIL OR ON GITHUB:
+n.tesi@amsterdamumc.nl
+https://github.com/holstegelab/snakemake_pipeline

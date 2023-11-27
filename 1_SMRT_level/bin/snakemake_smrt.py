@@ -1,3 +1,28 @@
+###################################################################################################
+###################################################################################################
+### OVERVIEW OF PIPELINE AT THE LEVEL OF THE SINGLE SMRT CELL
+# INPUT IS A CONFIGURATION FILE (CONFIG_FILE.YML, GIVEN IN THE FOLDER) WITH:
+# 1. INPUT SUBREADS DATA (FROM DCACHE)
+# 2. OUTPUT DIRECTORY
+
+# THE PIPELINE WILL SUBMIT JOBS TO SLURM. RESOURCES ARE DECLARED IN THE CLUSTER_CONFIG_FILE.YML (PRESENT IN THE FOLDER).
+
+# TO RUN THE SCRIPT, THE COMMAND IS:
+# snakemake -s /PATH/TO/THIS_FILE.PY --latency-wait 60 --configfile /PATH/TO/CONFIG_FILE.YML --cluster "sbatch --ntasks {cluster.ntasks} -c {cluster.ncpupertask} --time {cluster.time}" --cluster-config PATH/TO/CLUSTER_CONFIG.YML --jobs 1
+
+# THE JOBS ARE:
+# 1. DOWNLOAD FROM DCACHE
+# 2. MD5 CHECKSUM
+# 3. CCS ALGORITHM
+# 4. SEPARATE HIFI FROM NON-HIFI DATA
+# 5. ALIGNMENT (HIFI AND NON-HIFI) TO HG38 AND CHM13
+# 6. SAMPLE CHECK (COMPARISON WITH GWAS DATA)
+# 7. COVERAGE SUMMARY
+# 8. READ LENGTH AND PASSES DISTRIBUTION PLOT
+# 9. DEEPCONSENSUS (BETA VERSION)
+###################################################################################################
+###################################################################################################
+
 ### PACKAGES
 import os
 import csv
@@ -5,29 +30,44 @@ import sys
 import re
 from os import path
 
-### SOFTWARE PATHS
-PYTHON="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/python"
-PRIMROSE="/project/holstegelab/Software/conda/miniconda3_v1/envs/py39/bin/primrose"
-CCS="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/ccs"
+### CONDA ENVIRONMENTS
+# py37 (python3.7 and most packages)
+# py39 (python3.9 was added later as primrose specifically needed python3.9)
+# install conda environments using the yml files
+# THESE ENVIRONMENTS ARE GIVEN IN THE FOLDER, ARE LIKELY REDUNDANT AND ARE NOT BASED ON THE LATEST VERSION OF SOME PACKAGES (WE KEPT SOFTWARE VERSIONS THE SAME FOR COMPATIBILITY)
+
+### SOFTWARE PATHS -- ADAPT THESE TO YOUR SYSTEM
+PYTHON="usr/bin/python"
+PRIMROSE="path/to/primrose"
+CCS="path/to/ccs"
 MD5="/usr/bin/md5sum"
-EXTRACT_CCS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_and_nonCCS.py"
-EXTRACT_CCS_DEEPCONS="/project/holstegelab/Software/snakemake_pipeline/bin/extract_ccs_and_nonCCS_forDeepCons.py"
-ALIGN="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/pbmm2"
-SAMPLE_CHECK="/project/holstegelab/Software/snakemake_pipeline/bin/sample_check.py"
-MOSDEPTH="/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/mosdepth"
-ASBT="/project/holstegelab/Software/nicco/tools/asbt/build/asbt"
-ACTC='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/actc'
-DEEPCONSENSUS='/project/holstegelab/Software/conda/miniconda3_v1/envs/py37/bin/deepconsensus'
-EXTRACT_READS_INFO='/project/holstegelab/Software/snakemake_pipeline/bin/extract_read_information.py'
-PLOT_READS_INFO='/project/holstegelab/Software/snakemake_pipeline/bin/plot_read_information.R'
+ALIGN="path/to/pbmm2"
+ASBT="path/to/asbt"
+# ONLY IF YOU WILL USE DEEPCONSENSUS
+DEEPCONSENSUS='path/to/deepconsensus'
+ACTC='path/to/actc'
+
+#### HOMEMADE SCRIPTS -- ADAPT PATHS IF NEEDED
+# SCRIPTS TO SEPARATE HIFI FROM NON-HIFI READS
+EXTRACT_CCS="/path/to/snakemake_pipeline/bin/extract_ccs_and_nonCCS.py"
+EXTRACT_CCS_DEEPCONS="/path/to/snakemake_pipeline/bin/extract_ccs_and_nonCCS_forDeepCons.py"
+# SCRIPT TO PERFORM SAMPLE CHECK COMPARED TO GWAS DATA
+SAMPLE_CHECK="/path/to/snakemake_pipeline/bin/sample_check.py"
+# SCRIPT TO EXTRACT READ INFORMATION (NUMBER OF PASSES AND READ QUALITY) AND PLOT
+EXTRACT_READS_INFO='/path/to/snakemake_pipeline/bin/extract_read_information.py'
+PLOT_READS_INFO='/path/to/snakemake_pipeline/bin/plot_read_information.R'
 
 ### RESOURCE PATHS
-H38CCS='/project/holstegelab/Share/pacbio/resources/h38_ccs.mmi'
-HG38SUBREADS='/project/holstegelab/Share/pacbio/resources/h38_subread.mmi'
-CHM13CCS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_hifi.mmi'
-CHM13SUBREADS='/project/holstegelab/Share/asalazar/data/chm13/assembly/v2_0/chm13v2.0_subreads.mmi'
-DCACHE_CONFIG='/project/holstegelab/Data/dcache.conf'
-DEEPCONSENSUS_MODEL='/project/holstegelab/Software/nicco/tools/deepConsensun_examples/checkpoint'
+# INDEXED REFERENCE GENOME HG38 (HIFI AND NON-HIFI)
+H38CCS='path/to/h38_ccs.mmi'
+HG38SUBREADS='path/to/h38_subread.mmi'
+# INDEXED REFERENCE GENOME CHM13 (HIFI AND NON-HIFI)
+CHM13CCS='path/to/chm13v2.0_hifi.mmi'
+CHM13SUBREADS='path/to/chm13v2.0_subreads.mmi'
+# DCACHE CONFIGURATION FILE
+DCACHE_CONFIG='path/to/dcache.conf'
+# DEEPCONSENSUS MODEL
+DEEPCONSENSUS_MODEL='path/to/deepConsensun_examples/checkpoint'
 
 CACHE=None
 
@@ -89,52 +129,51 @@ def checkSum(path, MD5):
     outf.close()
     return RUN
 
-### MAIN -- run before the rules
+### MAIN
 print("## Input subreads in dcache --> %s" %(config["IN_DIR"]))
 print("## Output directory --> %s" %(config["OUT_DIR"]))
-# create folder to place files copied from dcache
+
+# COPY THE SMRT CELL DATA TO LOCAL -- CREATE FOLDER WITH RUN ID
 folder_name, smrt_id, out_name = config["IN_DIR"].split('/')[-3::]
 if not path.isdir('%s/%s' %(config["OUT_DIR"], folder_name)):
     os.system('mkdir %s/%s' %(config["OUT_DIR"], folder_name))
-# also check if a folder with the smrt_id name is present
+# CHECK IF A FOLDER WITH THE SAME SMRT ID IS PRESENT
 if not path.isdir('%s/%s/%s' %(config["OUT_DIR"], folder_name, smrt_id)):
     os.system('mkdir %s/%s/%s' %(config["OUT_DIR"], folder_name, smrt_id))
-# then adjust the output name and the path to be used as input for the dcache copy
+# ADJUST THE OUTPUT NAME AND PATHS TO BE USED FOR THE DCACHE COPY
 out_name = out_name.split('.')[0]
 dcache_path = '/'.join(config["IN_DIR"].split('/')[0:-1])
 
-# Rule to manage output files and order of snakemake processes
+# RULE TO MANAGE WHICH STEPS WILL BE DONE (BASED ON OUTPUT FILE EXTENSION)
 rule all:
     input:
-        # 1. copy from dcache
-        #expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
-        # 2. md5 check sum
-        #expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
-        # 3. do ccs analysis keeping all kinetics values
+        # 1. COPY FROM DCACHE TO LOCAL
+        expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
+        # 2. MD5 CHECK 
+        expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
+        # 3. CCS ANALYSIS KEEPING ALL KINETICS INFORMATION
         expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 4. run primrose analysis -- commented out 
-        #expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 5. extract hifi and non-hifi reads
+        # 4. EXTRACT HIFI AND NON-HIFI DATA
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 6. alignment to hg38 of hifi reads
+        # 5. ALIGN HIFI TO HG38
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 7. alignment to hg38 of non-hifi reads
+        # 6. ALIGN NON-HIFI TO HG38
         expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 8. alignment to chm13 of hifi reads
+        # 7. ALIGN HIFI TO CHM13
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 9. alignment to chm13 of non-hifi reads
+        # 8. ALIGN NON-HIFI TO CHM13
         expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.chm13.bam", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 10. sample check
+        # 9. SAMPLE CHECK
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.sample.txt", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 11. coverage summary
-        #expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage.mosdepth.summary.txt", out_dir = config["OUT_DIR"], out_name = out_name)
+        # 10. GENERATE COVERAGE SUMMARY AND PLOT
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.coverage_summary.txt", out_dir = config["OUT_DIR"], out_name = out_name),
         expand("{out_dir}/{out_name}.ccs.reads_summary.png", out_dir = config["OUT_DIR"], out_name = out_name),
-        # 12. deep consensus
-        expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+        # 11. CREATE INPUT FOR DEEPCONSENSUS -- COMMENTED AS WE CURRENTLY DON'T DO THIS
+        #expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons.bam", out_dir = config["OUT_DIR"], out_name = out_name)
+        # 12. RUN DEEPCONSENSUS -- COMMENTED AS WE CURRENTLY DON'T DO THIS
         #expand("{out_dir}/{out_name}.ccs.deepConsensus.bam", out_dir = config["OUT_DIR"], out_name = out_name)
 
-# Rule to copy data from dcache: steps are stage, download, unstage
+# RULE TO DOWNLOAD DATA FROM DCACHE, STEPS ARE: STAGE -- DOWNLOAD -- UNSTAGE
 rule dcache_copy:
     output:
         expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
@@ -148,7 +187,7 @@ rule dcache_copy:
         ada --tokenfile {DCACHE_CONFIG} --unstage {params.inp}
         """
 
-# Rule to perform md5 sum check if this is available
+# RULE TO PERFORM MD5 CHECK IF THIS IS AVAILABLE
 rule md5_check:
     input:
         expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name)
@@ -159,7 +198,7 @@ rule md5_check:
     run:
         RUN = checkSum("%s/%s/%s" %(config["OUT_DIR"], folder_name, smrt_id), MD5)
 
-# Rule to run CCS analysis on the cluster
+# RULE TO PERFORM CCS ANALYSIS
 rule ccs:
     input:
         expand("{out_dir}/{folder_name}/{smrt_id}/snakemake_checksum.txt", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id),
@@ -174,7 +213,7 @@ rule ccs:
         if RUN == 'True':
             shell("{CCS} --min-passes 0 --min-rq 0 {input[1]} {output[0]} --report-file {output[1]} --log-file {output[2]} --log-level INFO --all-kinetics")
 
-# Rule for methylation analysis with primrose
+# RULE FOR METHYLATION ANALYSIS WITH PRIMROSE
 rule primrose:
     input:
         expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -184,7 +223,7 @@ rule primrose:
         {PRIMROSE} --min-passes 0 {input[0]} {output[0]} 
         """
 
-# Rule for extracting CCS and non-CCS reads
+# RULE TO EXTRACT HIFI AND NON-HIFI DATA
 rule extract_ccs_nonccs:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -195,7 +234,7 @@ rule extract_ccs_nonccs:
         {PYTHON} {EXTRACT_CCS} {input[0]} {output[0]} {output[1]}
         """
 
-# Rule for alignment of hifi reads to GRCh38
+# RULE TO ALIGN HIFI DATA TO HG38
 rule align_ccs:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -205,7 +244,7 @@ rule align_ccs:
         {ALIGN} align --preset CCS {H38CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         """
 
-# Rule for alignment of non-hifi reads to GRCh38
+# RULE TO ALIGN NON-HIFI DATA TO HG38
 rule align_nonccs:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -215,7 +254,7 @@ rule align_nonccs:
         {ALIGN} align --preset SUBREAD {HG38SUBREADS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         """
 
-# Rule for alignment of hifi reads to chm13
+# RULE TO ALIGN HIFI DATA TO CHM13
 rule align_ccs_chm13:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -225,7 +264,7 @@ rule align_ccs_chm13:
         {ALIGN} align --preset CCS {CHM13CCS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         """
 
-# Rule for alignment of non-hifi reads to chm13
+# RULE TO ALIGN NON-HIFI DATA TO CHM13
 rule align_nonccs_chm13:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.nonhifi.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -235,7 +274,7 @@ rule align_nonccs_chm13:
         {ALIGN} align --preset SUBREAD {CHM13SUBREADS} --unmapped --sort {input[0]} {output[0]} --log-level=INFO
         """
 
-# Rule to do the sample check
+# RULE TO DO SAMPLE CHECK
 rule sample_check:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -245,7 +284,7 @@ rule sample_check:
         {PYTHON} {SAMPLE_CHECK} {input[0]} {output[0]}
         """
 
-# Rule to calculate coverage summary
+# RULE TO CALCULATE COVERAGE STATISTICS
 rule coverage_summary:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.hg38.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -260,7 +299,7 @@ rule coverage_summary:
         tail -1 {output[0]} >> {params.pfx_main}
         """
 
-# Rule to plot and save read length distribution of hifi and non-hifi reads
+# RULE TO PLOT READ-LENGTH AND PASSES DISTRIBUTION IN HIFI AND NON-HIFI DATA
 rule read_length_distr:
     input:
         expand("{out_dir}/{out_name}.ccs.primrose.hifi.bam", out_dir = config["OUT_DIR"], out_name = out_name),
@@ -273,13 +312,15 @@ rule read_length_distr:
         /usr/bin/Rscript {PLOT_READS_INFO} {output[0]}
         """
 
-# DeepConsensus
-# Deepconsensus is a 2-step process: first, CCS should be run with --min-rq=0.88 and default for passes.
-# Then, deepconsensus first aligns subreads to the actual ccs (actc), and then deepconsensus polishes reads
-# Therefore, it is required to have:
-# 1. the raw subreads data
-# 2. the ccs data (with refined parameters)
-# Rule to extract reads to be used for deepConsensus
+###################################################################################################
+# DEEPCONSENSUS -- NOT PERFORMED AT THE MOMENT, BUT FUNCTIONAL
+# DEEPCONSENSUS IS A 2-STEP PROCESS: FIRST, CCS SHOULD BE RUN WITH --min-rq=0.88 AND DEFAULT FOR PASSES.
+# THEN, DEEPCONSENSUS FIRST ALIGNS SUBREADS TO THE ACTUAL CCS (ACTC), AND THEN DEEPCONSENSUS POLISHES THE READS
+# THUS, WE NEED TO HAVE:
+# 1. THE RAW SUBREADS DATA
+# 2. THE HIFI DATA WITH REFINED PARAMETERS
+
+# RULE TO EXTRACT HIFI READS FOR DEEPCONSENSUS
 rule extract_ccs_deepcons:
     input:
         expand("{out_dir}/{out_name}.ccs.bam", out_dir = config["OUT_DIR"], out_name = out_name)
@@ -289,7 +330,7 @@ rule extract_ccs_deepcons:
         {PYTHON} {EXTRACT_CCS_DEEPCONS} {input[0]} {output[0]}
         """
 
-# Rule to align the created set of CCS reads back to the subreads
+# RULE TO ALIGN SUBREADS TO THE NEW SET OF HIFI READS
 rule align_ccs_subreads_deepcons:
     input:
         expand("{out_dir}/{folder_name}/{smrt_id}/{out_name}.subreads.bam", out_dir = config["OUT_DIR"], folder_name = folder_name, smrt_id = smrt_id, out_name = out_name),
@@ -300,16 +341,7 @@ rule align_ccs_subreads_deepcons:
         {ACTC} -j 40 {input[0]} {input[1]} {output[0]}
         """
 
-rule split_alignment_file:
-    input:
-        expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons_aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    output:
-        expand("{out_dir}/{out_name}_deepconsensus_shards/{out_name}.shard0.bam", out_dir = config["OUT_DIR"], out_name = out_name)
-    shell: """
-        {PYTHON} {SPLIT_BEFORE_DEEPCONS} {input[0]} 500
-        """
-
-# Rule to run deepConsensus
+# RULE TO RUN DEEPCONSENSUS
 rule deepconsensus_run:
     input:
         expand("{out_dir}/{out_name}.ccs.hifi_for_deepCons_aln_subreads.bam", out_dir = config["OUT_DIR"], out_name = out_name),

@@ -1,0 +1,30 @@
+THIS FOLDER CONTAINS THE MAIN FILES FOR RUNNING THE FIRST STEP OF THE PIPELINE, AT THE SMRT CELL LEVEL
+
+THIS FOLDER CONTAINS:
+- bin:
+  - extract_ccs_and_nonCCS_forDeepConsensus.py: python script to extract input for deepconsensus
+  - extract_ccs_and_nonCCS.py: python script to extract input HiFi and non-HiFi reads
+  - extract_read_information.py: python script to extract read information (number of passes, read length)
+  - plot_read_information.R: R script to generate plot of the read length distribution and passes distribution
+  - sample_check.py: python script to compare PacBio SNPs from pileup with SNP-array in order to match sample
+  - snakemake_smrt.py: main snakemake pipeline
+- config:
+  - config_cluster.yml: configuration file for the cluster, reporting resources to use for each operation
+  - config_file_example.yml: example configuration file for an actual run. In this file you need to specify the input subreads.bam and the output directory.
+  - py37.yml: conda environment based on python3.7
+  - py39.yml: conda environment based on pyrhon3.9
+
+NB: the conda environments contain (slightly) outdated softwares, as we kept the same software versions during all our sequencing project, which lasted 3 years. No major changes should have happened in the latest software versions, but in case you want to use the latest versions, you need to download them separately. 
+Also, the conda environments are likely redundant.
+
+YOU WILL NEED TO ADJUST PATHS TO THE SOFTWARES TO THOSE PRESENT IN YOUR MACHINE. 
+
+******
+In order to run the snakemake pipeline, the command is the following:
+snakemake -s /project/holstegelab/Software/snakemake_pipeline/bin/Snakefile_with_copy.py --latency-wait 60 --configfile [path/to/config_file.yml] --cluster "sbatch --ntasks {cluster.ntasks} -c {cluster.ncpupertask} --time {cluster.time}" --cluster-config [path/to/config_cluster.yml] --jobs 1
+******
+
+
+ADDITIONAL INFORMATION IS AVAILABLE BY EMAIL OR ON GITHUB:
+n.tesi@amsterdamumc.nl
+https://github.com/holstegelab/snakemake_pipeline

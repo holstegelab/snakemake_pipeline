@@ -1,0 +1,3 @@
+IN_FILES : "/path/to/smrt_prefix_1,/path/to/smrt_prefix_2,/path/to/smrt_prefix_3"
+
+OUT_FILE : "/path/to/output/sample_prefix"

@@ -1,19 +1,22 @@
 # script to plot read length distribution 
 
 # Libraries
+print('** Loading libraries')
 import pysam
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import sys
 import statistics
 
 # Input data
-in_ccs = pysam.AlignmentFile(sys.argv[1], "rb", check_sq=False)
-in_nonccs = pysam.AlignmentFile(sys.argv[2], "rb", check_sq=False)
-#in_ccs = pysam.AlignmentFile('/project/holstegelab/Share/pacbio/data_processed/ad_centenarians/m64367e_221018_215644.ccs.primrose.hifi.bam', "rb", check_sq=False)
-#in_nonccs = pysam.AlignmentFile('/project/holstegelab/Share/pacbio/data_processed/ad_centenarians/m64367e_221018_215644.ccs.primrose.nonhifi.bam', "rb", check_sq=False)
+input_ccs = sys.argv[1]
+input_nonccs = sys.argv[2]
+print('** Input CCS: %s' %(input_ccs))
+print('** Input NON-CCS: %s' %(input_nonccs))
+in_ccs = pysam.AlignmentFile(input_ccs, "rb", check_sq=False)
+in_nonccs = pysam.AlignmentFile(input_nonccs, "rb", check_sq=False)
+#in_ccs = pysam.AlignmentFile(in_ccs, "rb", check_sq=False)
+#in_nonccs = pysam.AlignmentFile(in_nonccs, "rb", check_sq=False)
 
 # Output data
 reads_info = []
@@ -49,5 +52,11 @@ df = pd.DataFrame(reads_info)
 df.columns = ['read_name', 'read_length', 'read_pass', 'read_quality', 'read_type']
 
 # write table
-outname = sys.argv[1].split('.')[0] + '.ccs.reads_summary.txt'
+if 'ccs.demultiplexed.' in input_ccs:
+    tmp_outname = input_ccs.split('.')[0]
+    demultiplex_info = input_ccs.split('demultiplexed.')[-1].split('.primrose')[0]
+    outname = '%s_%s.ccs.reads_summary.txt' %(tmp_outname, demultiplex_info)
+else:
+    outname = sys.argv[1].split('.')[0] + '.ccs.reads_summary.txt'
+print('** Output summary: %s' %(outname))
 df.to_csv(outname, sep = ',')

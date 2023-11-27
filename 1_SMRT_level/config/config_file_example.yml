@@ -1,0 +1,5 @@
+# INPUT SUBREADS FILE (THE PATH IS ON DCACHE)
+IN_DIR : "tape/pacbio/r64367e_20231016_145247/1_A01/m64367e_231016_150430.subreads.bam"
+
+# OUTPUT DIRECTORY WHERE ALL FILES WILL BE PLACED
+OUT_DIR : "/project/holstegelab/Share/pacbio/data_processed/ad_centenarians"

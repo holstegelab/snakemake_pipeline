@@ -57,7 +57,7 @@ pileup_analysis_chm13:
 deepvariant_hg38:
   ntasks: 1
   ncpupertask: 60
-  time: 5760
+  time: 7200
 
 deepvariant_chm13:
   ntasks: 1
@@ -160,3 +160,4 @@ convertSAM_BAM:
   ntasks: 1
   ncpupertask: 4
   time: 1440
+
